@@ -1,0 +1,14 @@
+<html>
+	<head></head>
+	<body style = 'background-color:red'>
+		
+	</body>
+</html>
+
+<#
+	a = 100
+#>
+
+<#
+	b = a
+#>
