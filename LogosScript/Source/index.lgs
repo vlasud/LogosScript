@@ -1,6 +1,6 @@
 <h1 style = 'background-color:green'>Hello</h1>
 <title>LogosScript</title>
 <#
-	a = 100
-	b = a + c
+	a = "Hello"
+	b = a * 3
 #>

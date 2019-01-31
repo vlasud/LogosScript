@@ -1,14 +1,18 @@
 #pragma once
 
 // Массив операторов
-const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "\t"};
+const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "\t", "++", "--"};
 // Массив команд
 const std::vector<std::string> COMMANDS = { "if", "for", "while"};
+// Массив ключевых слов
+const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 
 // Перечислентие типов инструкции
 enum TYPE_OF_INSTRUCTION { DATA, OPERATOR, COMMAND, TAB};
 // Перечислентие типов инструкции для парсера
 enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
+// Перечисление типов данных
+enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 
 class Instruction
 {
@@ -19,6 +23,8 @@ public:
 	TYPE_OF_INSTRUCTION type_of_instruction;
 	// Имя инструкции
 	std::string body;
+	// Значение
+	std::string data;
 	// Статика данных
 	bool isVariable;
 
@@ -64,4 +70,4 @@ public:
 void interpreter_start(const SOCKET client_socket, const int file_id);
 void read_script(Session &session, Page &page_object, const unsigned int start, const unsigned int end);
 void do_script(Session &session);
-void do_line_script_with_operators(Session &session, const unsigned int line, const unsigned int begin, const unsigned int end);
+void do_line_script_with_operators(Session &session, const unsigned int line, const unsigned int begin, unsigned int end);

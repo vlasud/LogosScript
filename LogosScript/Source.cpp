@@ -133,7 +133,7 @@ void loadPages(const std::string dir = "")
 
 int main(int argc, char **argv[])
 {
-	setlocale(LC_ALL, "Russian");
+	setlocale(LC_NUMERIC, "C");
 
 	std::cout << "IP: \t" << ip << std::endl;
 	std::cout << "PORT: \t" << port << std::endl;
