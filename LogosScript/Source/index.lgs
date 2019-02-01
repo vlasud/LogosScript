@@ -1,10 +1,20 @@
 <h1 style = 'background-color:green'>Hello</h1>
 <title>LogosScript</title>
 <#
-	a = 10
-	b = 20
-	c = a - b
+	a = 20
 
-	if(true):
-		a = "Hello"
+	if(a == 20)
+		b = "1"
+	elif(a == 10)
+		b = "2"
+	elif(a == 21)
+		b = "3"
+	else
+		b = "4"
+
+	if(b == "4")
+		b = "5"
+	else 
+		b = "10"
+
 #>

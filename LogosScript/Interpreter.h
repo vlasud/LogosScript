@@ -1,9 +1,9 @@
 #pragma once
 
 // Массив операторов
-const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "\t", "++", "--"};
+const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!="};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "for", "while"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "for", "while"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 
@@ -55,6 +55,8 @@ private:
 
 public:
 	std::vector<Instruction> instructions;
+	// Уровень локального пространства
+	int namespace_level;
 };
 
 class Session
@@ -66,10 +68,17 @@ public:
 
 	// Ассоциативный массив всех данных скрипта
 	std::map<std::string, Instruction> all_data;
+
+	// Последняя выполненая команда
+	std::string last_command;
+	bool last_command_success;
+	//
 };
 
 
 void interpreter_start(const SOCKET client_socket, const int file_id);
 void read_script(Session &session, Page &page_object, const unsigned int start, const unsigned int end);
 void do_script(Session &session);
-void do_line_script_with_operators(Session &session, const unsigned int line, const unsigned int begin, unsigned int end);
+void do_script(Session &session, const unsigned int begin, unsigned int end);
+void do_line_script_operators(Session &session, const unsigned int line, const unsigned int begin, unsigned int end);
+bool do_line_script_commands(Session &session, unsigned int line, const unsigned int begin, unsigned int end);

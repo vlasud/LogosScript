@@ -34,6 +34,10 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 
 	send(client_socket, response.c_str(), response.length(), 0);
 	closesocket(client_socket);
+
+	std::cout << "Variables: " << std::endl;
+	for (auto i = session.all_data.begin(); i != session.all_data.end(); i++)
+		std::cout << i->second.body << " = " << i->second.data << std::endl;
 }
 
 std::string format_data(std::string data)
@@ -75,7 +79,7 @@ TYPE_OF_INSTRUCTION_FOR_PARSER get_type_of_instruction(char ch)
 	if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' ||
 		ch >= '0' && ch <= '9' || ch == '_' || ch == '"' || ch == '.')
 		return TYPE_OF_INSTRUCTION_FOR_PARSER::_WORD;
-	else if (ch == ' ')
+	else if (ch == '\t' || ch == ' ')
 		return TYPE_OF_INSTRUCTION_FOR_PARSER::SPACE;
 	else return TYPE_OF_INSTRUCTION_FOR_PARSER::_OPERATOR;
 }
@@ -110,7 +114,18 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 		all_lines_length = page_object.all_lines[i].length();
 		session.lines.push_back(LineInstructions { } );
 
-		for (unsigned register int j = 0; j < all_lines_length; j++)
+		// Подсчет уровня локального пространства
+		register int space_counter = -1;
+		unsigned register int j = 0;
+
+		while (page_object.all_lines[i][++space_counter] == '\t')
+		{
+			session.lines[line_counter].namespace_level++;
+			j++;
+		}
+		//
+
+		for (; j < all_lines_length; j++)
 		{
 			if (last_type_of_instruction != get_type_of_instruction(page_object.all_lines[i][j]))
 			{
@@ -194,17 +209,166 @@ void do_script(Session &session)
 				}
 			}
 		}
-		do_line_script_with_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+
+		if (session.lines[i].instructions.size() > 0)
+		{
+			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+
+			// Поиск и выполнение команд. В случае неуспешного выполнения - пропуск строк уровня этой команды
+			if (!do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1))
+			{
+				unsigned int command_level = session.lines[i].namespace_level + 1;
+				do { i++; } while (i < session_lines_size && (session.lines[i].namespace_level == 0 || session.lines[i].namespace_level == command_level));
+				i--;
+			}
+		}
 	}
-	std::cout << "Variables: " << std::endl;
-	for (auto i = session.all_data.begin(); i != session.all_data.end(); i++)
-		std::cout << i->second.body << " = " << i->second.data << std::endl;
 }
 
-void do_line_script_with_operators(Session& session, const unsigned int line, const unsigned int begin, unsigned int end)
-// Выполнение часть инструкций в строке если там есть оператор
+void do_script(Session &session, const unsigned int begin, unsigned int end)
+// Выполнение скрипта
 {
-	std::cout << "Operators: " << std::endl;
+	for (register unsigned int i = begin; i <= end; i++)
+	{
+		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
+		{
+			// Если инструкция - данные
+			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+			{
+				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
+					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
+				{
+					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
+					{
+						session.lines[i].instructions[j].isVariable = true;
+						session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+					}
+					else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
+				}
+				else
+				{
+					session.lines[i].instructions[j].isVariable = false;
+					//session.lines[i].instructions[j].data = session.lines[i].instructions[j].body;
+				}
+			}
+		}
+		if (session.lines[i].instructions.size() > 0)
+		{
+			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+
+			// Поиск и выполнение команд. В случае неуспешного выполнения - пропуск строк уровня этой команды
+			if (!do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1))
+			{
+				unsigned int command_level = session.lines[i].namespace_level + 1;
+				do { i++; } while (i < end && (session.lines[i].namespace_level == 0 || session.lines[i].namespace_level == command_level));
+				i--;
+			}
+		}
+	}
+}
+
+bool do_line_script_commands(Session& session, unsigned int line, const unsigned int begin, unsigned int end)
+// Выполнение часть инструкций в строке. Работа с командами
+// ~ Возвращает успех выполнения команды
+{
+	// Поиск команд
+	for (register int i = begin; i <= end; i++)
+	{
+		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::COMMAND)
+		{
+			Instruction temp = session.lines[line].instructions[i];
+
+			if (temp.body == "if" || temp.body == "elif")
+			{
+				session.last_command = "if";
+				if (temp.body == "elif")
+					if (session.last_command == "if" && session.last_command_success == true) break;
+
+				for (register int find_data_counter = i + 1; find_data_counter <= end; find_data_counter++)
+				{
+					if (session.lines[line].instructions[find_data_counter].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+					{
+						// Если условие истино
+						if (session.lines[line].instructions[find_data_counter].data == "true"
+							|| (session.lines[line].instructions[find_data_counter].data != "0"
+								&& session.lines[line].instructions[find_data_counter].data != "null"
+								&& session.lines[line].instructions[find_data_counter].data != "false"))
+						{
+							int begin_new	= -1;
+							int end_new		= -1;
+
+							// Поиск вхождения в новый уровень локального пространства
+							for (register int find_begin_new_counter = line + 1; find_begin_new_counter <= session.lines.size(); find_begin_new_counter++)
+								if (session.lines[find_begin_new_counter].namespace_level == session.lines[line].namespace_level + 1)
+								{
+									begin_new = find_begin_new_counter;
+									break;
+								}
+
+							// Поиск конца нового уровеня локального пространства
+							for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
+								if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
+									&& session.lines[find_end_new_counter].namespace_level != 0)
+								{
+									end_new = find_end_new_counter;
+									break;
+								}
+							if (end_new == -1) end_new = begin_new;
+							if (begin_new != -1)
+							{
+								session.last_command_success = true;
+								do_script(session, begin_new, end_new);
+								return false;
+							}
+						}	
+						else session.last_command_success = false;
+					}
+					else if (find_data_counter == end)
+					{
+						// Синтаксическая ошибка
+					}
+				}
+			}
+			else if (temp.body == "else")
+			{
+				if ((session.last_command == "if") && session.last_command_success == true) break;
+
+				int begin_new = -1;
+				int end_new = -1;
+
+				// Поиск вхождения в новый уровень локального пространства
+				for (register int find_begin_new_counter = line + 1; find_begin_new_counter <= session.lines.size(); find_begin_new_counter++)
+					if (session.lines[find_begin_new_counter].namespace_level == session.lines[line].namespace_level + 1)
+					{
+						begin_new = find_begin_new_counter;
+						break;
+					}
+
+				// Поиск конца нового уровеня локального пространства
+				for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
+					if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
+						&& session.lines[find_end_new_counter].namespace_level != 0)
+					{
+						end_new = find_end_new_counter;
+						break;
+					}
+				if (end_new == -1) end_new = begin_new;
+				if (begin_new != -1)
+				{
+					session.last_command_success = true;
+					do_script(session, begin_new, end_new);
+					return false;
+				}
+			}
+			//else if (temp.body == "else") return false;
+		}
+	}
+	return false;
+}
+
+void do_line_script_operators(Session& session, const unsigned int line, const unsigned int begin, unsigned int end)
+// Выполнение часть инструкций в строке. Работа с операторами
+{	
 	// Операторы первого уровня [(, ), ++, --, -]
 	for (register int i = end; i >= begin; i--)
 	{
@@ -226,7 +390,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						if (--counter == 0)
 						{
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + j);
-							do_line_script_with_operators(session, line, j, i - 2);
+							do_line_script_operators(session, line, j, i - 2);
 							end -= (i - j);
 							i -= (i - j);
 							break;
@@ -575,13 +739,27 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 							{
 								case TYPE_OF_DATA::_INT:
 								{
-									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									std::string temp = session.lines[line].instructions[i + 1].data;
+									unsigned int size = atoi(session.lines[line].instructions[i - 1].data.c_str());
+
+									session.lines[line].instructions[i - 1].data = EMPTY;
+
+									for (register unsigned int m = 0; m < size; m++)
+										session.lines[line].instructions[i - 1].data += temp;
+
 									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
 								case TYPE_OF_DATA::_DOUBLE:
 								{
-									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									std::string temp = session.lines[line].instructions[i + 1].data;
+									unsigned int size = atoi(session.lines[line].instructions[i - 1].data.c_str());
+
+									session.lines[line].instructions[i - 1].data = EMPTY;
+
+									for (register unsigned int m = 0; m < size; m++)
+										session.lines[line].instructions[i - 1].data += temp;
+
 									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
@@ -798,7 +976,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			else continue;
 		}
 	}
-	// Операторы третьего уровня [+, -]
+	// Операторы третьего уровня [+, -, ==]
 	for (register int i = begin; i <= end; i++)
 	{
 		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
@@ -1186,6 +1364,34 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 				session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 				i--;
 				end -= 2;
+			}
+			else if (temp.body == "==")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "false";
+					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
+			else if (temp.body == "!=")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "false" : "true";
+					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
 			}
 			else continue;
 		}
@@ -2085,7 +2291,7 @@ Instruction::Instruction(const std::string body)
 	if (type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 	{
 		if (!(body[0] >= '0' && body[0] <= '9' ||
-			body[0] == '"'))
+			body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), body) != KEY_WORDS.end()))
 		{
 			this->data = "null";
 			this->type_of_data = TYPE_OF_DATA::_NONE;
