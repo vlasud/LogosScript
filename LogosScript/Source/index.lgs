@@ -2,5 +2,5 @@
 <title>LogosScript</title>
 <#
 	a = "Hello"
-	b = a * 3
+	b = a - 3
 #>

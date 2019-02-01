@@ -21,6 +21,8 @@ private:
 public:
 	// Тип инструкции
 	TYPE_OF_INSTRUCTION type_of_instruction;
+	// Тип данных
+	TYPE_OF_DATA type_of_data;
 	// Имя инструкции
 	std::string body;
 	// Значение

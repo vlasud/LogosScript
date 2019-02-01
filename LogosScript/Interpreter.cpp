@@ -149,22 +149,6 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 		line_counter++;
 	}
 
-	// Вывод в консоль для отладки
-	for (int i = 0; i < session.lines.size(); i++)
-	{
-		for (int j = 0; j < session.lines[i].instructions.size(); j++)
-		{
-			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::COMMAND) std::cout << "Команда ";
-			else if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR) std::cout << "Оператор ";
-			else if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) std::cout << "Данные ";
-			if(session.lines[i].instructions[j].body == "\t") std::cout << "табуляция" << std::endl;
-			else if (session.lines[i].instructions[j].body == " ") std::cout << "пусто" << std::endl;
-			else std::cout << session.lines[i].instructions[j].body << std::endl;
-		}
-	}
-	std::cout << std::endl;
-	//
-
 	do_script(session);
 }
 
@@ -185,13 +169,12 @@ void do_script(Session &session)
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
-					session.lines[i].instructions[j].isVariable = true;
-
 					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
+						session.lines[i].instructions[j].isVariable = true;
 						session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 					}
-					else session.lines[i].instructions[j].data = session.all_data.find(session.lines[i].instructions[j].body)->second.data;
+					else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
 				}
 				else
 				{
@@ -202,7 +185,7 @@ void do_script(Session &session)
 		}
 		do_line_script_with_operators(session, i, 0, session.lines[i].instructions.size() - 1);
 	}
-	std::cout << "Переменные: " << std::endl;
+	std::cout << "Variables: " << std::endl;
 	for (auto i = session.all_data.begin(); i != session.all_data.end(); i++)
 		std::cout << i->second.body << " = " << i->second.data << std::endl;
 }
@@ -210,7 +193,7 @@ void do_script(Session &session)
 void do_line_script_with_operators(Session& session, const unsigned int line, const unsigned int begin, unsigned int end)
 // Выполнение часть инструкций в строке если там есть оператор
 {
-	std::cout << "Операторы: " << std::endl;
+	std::cout << "Operators: " << std::endl;
 	// Операторы первого уровня [(, ), ++, --]
 	for (register int i = end; i >= begin; i--)
 	{
@@ -245,7 +228,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 				if (i < end && session.lines[line].instructions[i + 1].isVariable && session.lines[line].instructions[i + 1].type_of_instruction 
 					== TYPE_OF_INSTRUCTION::DATA)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -289,7 +272,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 				else if (i > begin && session.lines[line].instructions[i - 1].isVariable && session.lines[line].instructions[i - 1].type_of_instruction
 					== TYPE_OF_INSTRUCTION::DATA)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+					switch (session.lines[line].instructions[i - 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
 					{
@@ -325,7 +308,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			{
 				if (i < end && session.lines[line].instructions[i + 1].isVariable)
 				{	
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -369,7 +352,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 				}
 				else if (i > begin && session.lines[line].instructions[i - 1].isVariable)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+					switch (session.lines[line].instructions[i - 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
 					{
@@ -416,11 +399,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			{
 				if (i > 0)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 						case TYPE_OF_DATA::_INT:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 								case TYPE_OF_DATA::_INT:
 								{
@@ -432,6 +415,8 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 								{
 									session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 										* atof(session.lines[line].instructions[i + 1].data.c_str()));
+
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 									break;
 								}
 								case TYPE_OF_DATA::_BOOLEAN:
@@ -456,12 +441,14 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 								case TYPE_OF_DATA::_INT:
 								{
 									session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 										* atof(session.lines[line].instructions[i + 1].data.c_str()));
+
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 									break;
 								}
 								case TYPE_OF_DATA::_DOUBLE:
@@ -491,7 +478,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 								case TYPE_OF_DATA::_INT:
 								{
@@ -526,21 +513,24 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 								case TYPE_OF_DATA::_INT:
 								{
 									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
 								case TYPE_OF_DATA::_DOUBLE:
 								{
 									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
 								case TYPE_OF_DATA::_BOOLEAN:
 								{
 									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
 								case TYPE_OF_DATA::_STRING:
@@ -551,6 +541,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 								case TYPE_OF_DATA::_NONE:
 								{
 									session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 									break;
 								}
 							}
@@ -576,11 +567,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			{
 				if (i > 0)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 							case TYPE_OF_DATA::_INT:
 							{
@@ -597,11 +588,13 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 							case TYPE_OF_DATA::_BOOLEAN:
 							{
 								session.lines[line].instructions[i - 1].data = "false";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 								break;
 							}
 							case TYPE_OF_DATA::_STRING:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_NONE:
@@ -614,12 +607,13 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 							case TYPE_OF_DATA::_INT:
 							{
 								session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 									/ atof(session.lines[line].instructions[i + 1].data.c_str()));
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 								break;
 							}
 							case TYPE_OF_DATA::_DOUBLE:
@@ -631,11 +625,13 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 							case TYPE_OF_DATA::_BOOLEAN:
 							{
 								session.lines[line].instructions[i - 1].data = "false";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 								break;
 							}
 							case TYPE_OF_DATA::_STRING:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_NONE:
@@ -648,18 +644,24 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 							case TYPE_OF_DATA::_INT:
 							{
 								if (session.lines[line].instructions[i + 1].data == "false")
+								{
 									session.lines[line].instructions[i - 1].data = "null";
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
+								}
 								break;
 							}
 							case TYPE_OF_DATA::_DOUBLE:
 							{
 								if (session.lines[line].instructions[i + 1].data == "false")
+								{
+									session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 									session.lines[line].instructions[i - 1].data = "null";
+								}
 								break;
 							}
 							case TYPE_OF_DATA::_BOOLEAN:
@@ -670,6 +672,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 							case TYPE_OF_DATA::_STRING:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_NONE:
@@ -682,26 +685,30 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+							switch (session.lines[line].instructions[i - 1].type_of_data)
 							{
 							case TYPE_OF_DATA::_INT:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_DOUBLE:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_BOOLEAN:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_STRING:
 							{
 								session.lines[line].instructions[i - 1].data = "null";
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 								break;
 							}
 							case TYPE_OF_DATA::_NONE:
@@ -745,11 +752,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			{
 				if (i > 0)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -765,8 +772,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							if(session.lines[line].instructions[i - 1].data == "true")
+							if (session.lines[line].instructions[i - 1].data == "true")
+							{
 								session.lines[line].instructions[i - 1].data = atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1;
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_INT;
+							}
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
@@ -777,6 +787,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						case TYPE_OF_DATA::_NONE:
 						{
 							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_INT;
 							break;
 						}
 						}
@@ -784,12 +795,13 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
 							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								+ atof(session.lines[line].instructions[i + 1].data.c_str()));
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
@@ -801,8 +813,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
 							if (session.lines[line].instructions[i - 1].data == "true")
+							{
+								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 								session.lines[line].instructions[i - 1].data = atof(session.lines[line].instructions[i - 1].data.c_str()) + 1;
-							break;
+							}
+								break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
@@ -819,7 +834,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -842,6 +857,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						case TYPE_OF_DATA::_STRING:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
@@ -854,21 +870,24 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
 							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
 							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
@@ -879,6 +898,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						case TYPE_OF_DATA::_NONE:
 						{
 							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
 						}
@@ -903,11 +923,11 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 			{
 				if (i > 0)
 				{
-					switch (get_type_of_data(session.lines[line].instructions[i + 1].data))
+					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -943,12 +963,13 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
 							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								- atof(session.lines[line].instructions[i + 1].data.c_str()));
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
@@ -971,7 +992,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].data = "null";
 							break;
 						}
 						}
@@ -979,7 +1000,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
@@ -1002,6 +1023,7 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 						case TYPE_OF_DATA::_STRING:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
@@ -1014,31 +1036,36 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						switch (get_type_of_data(session.lines[line].instructions[i - 1].data))
+						switch (session.lines[line].instructions[i - 1].type_of_data)
 						{
 						case TYPE_OF_DATA::_INT:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
 							session.lines[line].instructions[i - 1].data = "null";
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
 							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
 						}
@@ -1064,7 +1091,8 @@ void do_line_script_with_operators(Session& session, const unsigned int line, co
 				if (i > 0)
 				{
 					session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
-					session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data = session.lines[line].instructions[i - 1].data;
+					session.lines[line].instructions[i - 1].type_of_data = session.lines[line].instructions[i + 1].type_of_data;
+					session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
@@ -1094,7 +1122,17 @@ Instruction::Instruction(const std::string body)
 	{
 		if (!(body[0] >= '0' && body[0] <= '9' ||
 			body[0] == '"'))
+		{
 			data = "null";
-		else data = body;
+			type_of_data = TYPE_OF_DATA::_NONE;
+		}
+		else
+		{
+			data = body;
+			type_of_data = get_type_of_data(data);
+
+			if (type_of_data == TYPE_OF_DATA::_STRING)
+				data = data.substr(1, data.length() - 2);
+		}
 	}
 }
