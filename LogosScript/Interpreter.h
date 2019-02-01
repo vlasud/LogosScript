@@ -1,7 +1,7 @@
 #pragma once
 
 // Массив операторов
-const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "\t", "++", "--"};
+const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "\t", "++", "--"};
 // Массив команд
 const std::vector<std::string> COMMANDS = { "if", "for", "while"};
 // Массив ключевых слов
