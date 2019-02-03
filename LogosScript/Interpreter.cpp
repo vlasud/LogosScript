@@ -185,8 +185,11 @@ void do_script(Session &session)
 	// Размер массива строк
 	unsigned int session_lines_size = session.lines.size();
 
+	session.start_level = session.lines[0].namespace_level;
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
+		if (session.lines[i].namespace_level != session.start_level) continue;
+
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
@@ -212,24 +215,23 @@ void do_script(Session &session)
 
 		if (session.lines[i].instructions.size() > 0)
 		{
-			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+			// Сохранение инструкций перед их выполнением
+			if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
 
-			// Поиск и выполнение команд. В случае неуспешного выполнения - пропуск строк уровня этой команды
-			if (!do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1))
-			{
-				unsigned int command_level = session.lines[i].namespace_level + 1;
-				do { i++; } while (i < session_lines_size && (session.lines[i].namespace_level == 0 || session.lines[i].namespace_level == command_level));
-				i--;
-			}
+			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+			do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1);
 		}
 	}
 }
 
-void do_script(Session &session, const unsigned int begin, unsigned int end)
+void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData = false)
 // Выполнение скрипта
 {
+	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
+		if (session.lines[i].namespace_level != start_level) continue;
+
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
@@ -254,15 +256,12 @@ void do_script(Session &session, const unsigned int begin, unsigned int end)
 		}
 		if (session.lines[i].instructions.size() > 0)
 		{
+			// Сохранение инструкций перед их выполнением
+			if(session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
+
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
 
-			// Поиск и выполнение команд. В случае неуспешного выполнения - пропуск строк уровня этой команды
-			if (!do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1))
-			{
-				unsigned int command_level = session.lines[i].namespace_level + 1;
-				do { i++; } while (i < end && (session.lines[i].namespace_level == 0 || session.lines[i].namespace_level == command_level));
-				i--;
-			}
+			if (!isOnlyData && do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1));
 		}
 	}
 }
@@ -360,7 +359,61 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					return false;
 				}
 			}
-			//else if (temp.body == "else") return false;
+			else if (temp.body == "while")
+			{
+				for (register int find_data_counter = i + 1; find_data_counter <= end; find_data_counter++)
+				{
+					if (session.lines[line].instructions[find_data_counter].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+					{
+						// Пока условие истино
+						while (true)
+						{
+							// Перезапись инструкций из сохраненного места
+							session.lines[line].instructions = session.lines[line].copy_instructions;
+
+							do_script(session, line, line, true);
+
+							if (!(session.lines[line].instructions[find_data_counter].data == "true"
+								|| (session.lines[line].instructions[find_data_counter].data != "0"
+									&& session.lines[line].instructions[find_data_counter].data != "null"
+									&& session.lines[line].instructions[find_data_counter].data != "false"))) break;
+
+							int begin_new = -1;
+							int end_new = -1;
+
+							// Поиск вхождения в новый уровень локального пространства
+							for (register int find_begin_new_counter = line + 1; find_begin_new_counter <= session.lines.size(); find_begin_new_counter++)
+								if (session.lines[find_begin_new_counter].namespace_level == session.lines[line].namespace_level + 1)
+								{
+									begin_new = find_begin_new_counter;								
+									break;
+								}
+
+							// Поиск конца нового уровеня локального пространства
+							end_new = line + 1;
+							while (end_new < session.lines.size() && (session.lines[end_new].namespace_level == session.lines[line].namespace_level + 1
+								|| session.lines[end_new].namespace_level == 0))
+								end_new++;
+
+							if (end_new == -1) end_new = begin_new;
+							else end_new--;
+							if (begin_new != -1)
+							{
+								// Перезапись инструкций из сохраненного места
+								for (register unsigned update_command_counter = begin_new; update_command_counter <= end_new; update_command_counter++)
+									if(session.lines[update_command_counter].copy_instructions.size() > 0) session.lines[update_command_counter].instructions = session.lines[update_command_counter].copy_instructions;
+
+								session.last_command_success = true;
+								do_script(session, begin_new, end_new);
+							}
+						}
+					}
+					else if (find_data_counter == end)
+					{
+						// Синтаксическая ошибка
+					}
+				}
+			}
 		}
 	}
 	return false;
@@ -578,27 +631,27 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) - 1);
+						session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) - 1);
 						break;
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) - 1);
+						session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) - 1);
 						break;
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
-						session.lines[line].instructions[i - 1].data = "false";
+						session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data = "false";
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						session.lines[line].instructions[i - 1].data += "0";
+						session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data += "0";
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						session.all_data.find(session.lines[line].instructions[i - 1].body)->second.data = "null";
 						break;
 					}
 					}
@@ -1386,6 +1439,774 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "false" : "true";
 					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
+			else if (temp.body == ">")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data)
+					{
+						session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+						i--;
+						end -= 2;
+
+						continue;
+					}
+
+					switch (session.lines[line].instructions[i + 1].type_of_data)
+					{
+					case TYPE_OF_DATA::_INT:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) < atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_DOUBLE:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) < atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_BOOLEAN:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "false" && session.lines[line].instructions[i + 1].data == "true") ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if(session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false") 
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_STRING:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) < session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) < session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_NONE:
+					{
+						if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+							&& session.lines[line].instructions[i + 1].data != "false")
+							session.lines[line].instructions[i - 1].data = "true";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+						break;
+					}
+					}
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
+			else if (temp.body == "<")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data)
+					{
+						session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+						i--;
+						end -= 2;
+
+						continue;
+					}
+
+					switch (session.lines[line].instructions[i + 1].type_of_data)
+					{
+					case TYPE_OF_DATA::_INT:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) > atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_DOUBLE:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) > atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_BOOLEAN:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > atof(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true" && session.lines[line].instructions[i + 1].data == "false") ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_STRING:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) > session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) > session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_NONE:
+					{
+						if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+							&& session.lines[line].instructions[i + 1].data != "false")
+							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+						break;
+					}
+					}
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
+			else if (temp.body == "<=")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					switch (session.lines[line].instructions[i + 1].type_of_data)
+					{
+					case TYPE_OF_DATA::_INT:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) <= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false" )
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_DOUBLE:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) <= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_BOOLEAN:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "false" && session.lines[line].instructions[i + 1].data == "true" 
+								|| session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() <= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_STRING:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) <= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) <= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() <= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_NONE:
+					{
+						if (session.lines[line].instructions[i + 1].data != "0"
+							&& session.lines[line].instructions[i + 1].data != "false")
+							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+						break;
+					}
+					}
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
+			else if (temp.body == ">=")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					switch (session.lines[line].instructions[i + 1].type_of_data)
+					{
+					case TYPE_OF_DATA::_INT:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) >= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_DOUBLE:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) >= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_BOOLEAN:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= atof(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true" && session.lines[line].instructions[i + 1].data == "false"
+								|| session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "true";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i + 1].data = (session.lines[line].instructions[i + 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() >= atoi(session.lines[line].instructions[i + 1].data.c_str())) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_STRING:
+					{
+						switch (session.lines[line].instructions[i - 1].type_of_data)
+						{
+						case TYPE_OF_DATA::_INT:
+						{
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_DOUBLE:
+						{
+							session.lines[line].instructions[i - 1].data = (atof(session.lines[line].instructions[i - 1].data.c_str()) >= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_BOOLEAN:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "true") ? "1" : "0";
+							session.lines[line].instructions[i - 1].data = (atoi(session.lines[line].instructions[i - 1].data.c_str()) >= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_STRING:
+						{
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() >= session.lines[line].instructions[i + 1].data.length()) ? "true" : "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						case TYPE_OF_DATA::_NONE:
+						{
+							if (session.lines[line].instructions[i + 1].data != "0"
+								&& session.lines[line].instructions[i + 1].data != "false")
+								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+							break;
+						}
+						}
+						break;
+					}
+					case TYPE_OF_DATA::_NONE:
+					{
+						if (session.lines[line].instructions[i + 1].data != "0"
+							&& session.lines[line].instructions[i + 1].data != "false")
+							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+						break;
+					}
+					}
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);

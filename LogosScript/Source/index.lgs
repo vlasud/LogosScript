@@ -2,19 +2,7 @@
 <title>LogosScript</title>
 <#
 	a = 20
-
-	if(a == 20)
-		b = "1"
-	elif(a == 10)
-		b = "2"
-	elif(a == 21)
-		b = "3"
-	else
-		b = "4"
-
-	if(b == "4")
-		b = "5"
-	else 
-		b = "10"
-
+	
+	while(a <= 10)
+		a--
 #>
