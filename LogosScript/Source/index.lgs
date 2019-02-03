@@ -2,7 +2,13 @@
 <title>LogosScript</title>
 <#
 	a = 20
-	
-	while(a <= 10)
+	b = 100
+
+	while(a > 0 && a > 9)
+		
+		if(a == 10)
+			b *= 100
 		a--
+
+
 #>

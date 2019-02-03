@@ -391,7 +391,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 
 							// Поиск конца нового уровеня локального пространства
 							end_new = line + 1;
-							while (end_new < session.lines.size() && (session.lines[end_new].namespace_level == session.lines[line].namespace_level + 1
+							while (end_new < session.lines.size() && (session.lines[end_new].namespace_level > session.lines[line].namespace_level
 								|| session.lines[end_new].namespace_level == 0))
 								end_new++;
 
@@ -669,6 +669,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
 			Instruction temp = session.lines[line].instructions[i];
+			
 			
 			if (temp.body == "*")
 			{
@@ -1037,7 +1038,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
 			Instruction temp = session.lines[line].instructions[i];
-
+			
 			if (temp.body == "+")
 			{
 				if (i > 0)
@@ -1417,8 +1418,21 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 				i--;
 				end -= 2;
-			}
-			else if (temp.body == "==")
+			}		
+			else continue;
+		}
+	}
+	// Сюда
+	// Операторы нулевого уровня [=]
+	for (register int i = end; i >= begin; i--)
+	{
+		if (i < 0) break; // <------ Костыль
+
+		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
+		{
+			Instruction temp = session.lines[line].instructions[i];
+
+			if (temp.body == "==")
 			{
 				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
 					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
@@ -1426,7 +1440,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "false";
 					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 
-						session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 					i--;
 					end -= 2;
@@ -1579,8 +1593,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if(session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false") 
+							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
+								&& session.lines[line].instructions[i + 1].data != "false")
 								session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 							break;
@@ -1881,7 +1895,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						case TYPE_OF_DATA::_NONE:
 						{
 							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false" )
+								&& session.lines[line].instructions[i + 1].data != "false")
 								session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 							break;
@@ -1949,7 +1963,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "false" && session.lines[line].instructions[i + 1].data == "true" 
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == "false" && session.lines[line].instructions[i + 1].data == "true"
 								|| session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "false";
 							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 							break;
@@ -2212,12 +2226,53 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 					i--;
 					end -= 2;
+				}	
+				else continue;
+			}
+		}		
+	}
+	for (register int i = end; i >= begin; i--)
+	{
+		if (i < 0) break; // <------ Костыль
+
+		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
+		{
+			Instruction temp = session.lines[line].instructions[i];
+
+			if (temp.body == "||")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					session.lines[line].instructions[i - 1].data = ((session.lines[line].instructions[i - 1].data == "true"
+						|| session.lines[line].instructions[i - 1].data == "1") || (session.lines[line].instructions[i + 1].data == "true"
+							|| session.lines[line].instructions[i + 1].data == "1")) ? "true" : "false";
+					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
 				}
 			}
-			else continue;
+			if (temp.body == "&&")
+			{
+				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
+					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+				{
+					session.lines[line].instructions[i - 1].data = ((session.lines[line].instructions[i - 1].data == "true"
+						|| session.lines[line].instructions[i - 1].data == "1") && (session.lines[line].instructions[i + 1].data == "true"
+							|| session.lines[line].instructions[i + 1].data == "1")) ? "true" : "false";
+					session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
+
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
+					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
+					i--;
+					end -= 2;
+				}
+			}
 		}
 	}
-	// Операторы нулевого уровня [=]
 	for (register int i = end; i >= begin; i--)
 	{
 		if (i < 0) break; // <------ Костыль
@@ -2354,7 +2409,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							if (session.lines[line].instructions[i + 1].data == "true")
 								session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1);
-							
+
 							session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 							break;
 						}
@@ -2362,7 +2417,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							if (session.lines[line].instructions[i + 1].data == "true")
 								session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) + 1);
-							
+
 							session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 							break;
 						}
@@ -3092,7 +3147,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					// ... синтаксическая ошибка
 				}
 			}
-			else continue;
 		}
 	}
 }
