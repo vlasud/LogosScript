@@ -1,9 +1,9 @@
 #pragma once
 
 // Массив операторов
-const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||"};
+const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";"};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "elif", "else", "for", "while"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "for", "while", "for"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 

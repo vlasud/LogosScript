@@ -1,16 +1,6 @@
 <h1 style = 'background-color:green'>Hello</h1>
 <title>LogosScript</title>
 <#
-	a = 1
-	result = 1
-
-	while(a <= 5)
-		result *= a++
-
-		if(a == 5)
-			z = "a == 5"
-		elif(a == 6)
-			z = "a == 6"
-		else
-			z = "a = 0"
+	for (a = 1; a < 10 && a != 8; a++)
+	z += " hello"
 #>
