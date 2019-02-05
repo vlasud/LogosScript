@@ -304,15 +304,25 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 									break;
 								}
 
+							//// Поиск конца нового уровеня локального пространства
+							//for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
+							//	if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
+							//		&& session.lines[find_end_new_counter].namespace_level != 0)
+							//	{
+							//		end_new = find_end_new_counter;
+							//		break;
+							//	}
+							//if (end_new == -1) end_new = begin_new;
+
 							// Поиск конца нового уровеня локального пространства
-							for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
-								if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
-									&& session.lines[find_end_new_counter].namespace_level != 0)
-								{
-									end_new = find_end_new_counter;
-									break;
-								}
+							end_new = line + 1;
+							while (end_new < session.lines.size() && (session.lines[end_new].namespace_level > session.lines[line].namespace_level
+								|| session.lines[end_new].namespace_level == 0))
+								end_new++;
+
 							if (end_new == -1) end_new = begin_new;
+							else end_new--;
+
 							if (begin_new != -1)
 							{
 								session.last_command_success = true;
@@ -343,15 +353,25 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 						break;
 					}
 
+				//// Поиск конца нового уровеня локального пространства
+				//for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
+				//	if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
+				//		&& session.lines[find_end_new_counter].namespace_level != 0)
+				//	{
+				//		end_new = find_end_new_counter;
+				//		break;
+				//	}
+				//if (end_new == -1) end_new = begin_new;
+
 				// Поиск конца нового уровеня локального пространства
-				for (register int find_end_new_counter = line + 1; find_end_new_counter < session.lines.size(); find_end_new_counter++)
-					if (session.lines[find_end_new_counter].namespace_level != session.lines[line].namespace_level + 1
-						&& session.lines[find_end_new_counter].namespace_level != 0)
-					{
-						end_new = find_end_new_counter;
-						break;
-					}
+				end_new = line + 1;
+				while (end_new < session.lines.size() && (session.lines[end_new].namespace_level > session.lines[line].namespace_level
+					|| session.lines[end_new].namespace_level == 0))
+					end_new++;
+
 				if (end_new == -1) end_new = begin_new;
+				else end_new--;
+
 				if (begin_new != -1)
 				{
 					session.last_command_success = true;
