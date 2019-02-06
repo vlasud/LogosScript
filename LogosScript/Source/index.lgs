@@ -1,6 +1,6 @@
 <h1 style = 'background-color:green'>Hello</h1>
 <title>LogosScript</title>
 <#
-	for (a = 1; a < 10 && a != 8; a++)
-	z += " hello"
+	for(a = 5; a < 10; a++)
+		z += "Hello"
 #>

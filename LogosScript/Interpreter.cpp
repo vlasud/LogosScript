@@ -1327,7 +1327,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
@@ -1530,7 +1530,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 						break;
 					}
@@ -2623,7 +2623,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
 							session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
@@ -2835,9 +2835,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
-						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
-
 						session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 						break;
 					}
@@ -3258,9 +3255,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
-							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
-
 							session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 							break;
 						}
