@@ -1766,7 +1766,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() < session.lines[line].instructions[i + 1].data.length()
+								|| session.lines[line].instructions[i - 1].data.length() == session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
 							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1964,7 +1965,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
+							session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data.length() > session.lines[line].instructions[i + 1].data.length()
+								|| session.lines[line].instructions[i - 1].data.length() == session.lines[line].instructions[i + 1].data.length()) ? "false" : "true";
 							session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
