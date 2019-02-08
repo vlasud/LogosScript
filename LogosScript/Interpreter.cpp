@@ -532,7 +532,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + j);
 							do_line_script_operators(session, line, j, i - 2);
-							end -= (i - j + 1);
+							end -= (i - j) - 1;
 							i -= (i - j);
 							break;
 						}
