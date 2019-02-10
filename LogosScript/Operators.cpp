@@ -4,6 +4,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 // Выполнение часть инструкций в строке. Работа с операторами
 {
 	// Операторы первого уровня [(, ), ++, --, -]
+	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
 		if (i < 0) break; // <------ Костыль
@@ -292,12 +293,17 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					end--;
 				}
 			}
+			else if (temp.body == "]")
+			{
+				
+			}
 		}
 	}
+
 	// Операторы второго уровня [*, /]
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i < 0 || i >= session.lines[line].instructions.size()) break; // <------ Костыль
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -663,10 +669,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			else continue;
 		}
 	}
+
+	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	// Операторы третьего уровня [+, -, ==]
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i < 0) break; // <------ Костыль
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -1057,6 +1065,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	}
 	// Сюда
 	// Операторы нулевого уровня [=]
+	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
 		if (i < 0) break; // <------ Костыль
@@ -1866,6 +1875,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			}
 		}
 	}
+
+	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
 		if (i < 0) break; // <------ Костыль
@@ -1908,6 +1919,62 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			}
 		}
 	}
+
+	for (register int i = begin; i <= end; i++)
+	{
+		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
+
+		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
+		{
+			Instruction &temp = session.lines[line].instructions[i];
+
+			if (temp.body == "{")
+			{
+				temp.type_of_data == TYPE_OF_INSTRUCTION::DATA;
+				temp.array.clear();
+
+				for (register int j = i + 1; j <= end; j++)
+				{
+					if (session.lines[line].instructions[j].body == "{")
+					{
+						do_line_script_operators(session, line, j, end);
+						temp.array.push_back(session.lines[line].instructions[j]);
+					}
+					else if (session.lines[line].instructions[j].body == "}")
+					{
+						for (register unsigned int z = i + 1; z <= j; z++)
+						{
+							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + z);
+							end--;
+							z--;
+							j--;
+							i++;
+						}
+
+						if (temp.array.size() != 0)
+						{
+							temp.type_of_data = temp.array[0].type_of_data;
+							temp.body = "array";
+							temp.data = temp.array[0].data;
+						}
+						else
+						{
+							temp.type_of_data = TYPE_OF_DATA::_NONE;
+							temp.body = "array";
+							temp.data = "null";
+						}
+
+						break;
+					}
+					else if (session.lines[line].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+						temp.array.push_back(session.lines[line].instructions[j]);
+				}
+				break;
+			}
+		}
+	}
+
+	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
 		if (i < 0) break; // <------ Костыль
@@ -1922,6 +1989,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
 					session.lines[line].instructions[i - 1].type_of_data = session.lines[line].instructions[i + 1].type_of_data;
+					session.lines[line].instructions[i - 1].array = session.lines[line].instructions[i + 1].array;
 					session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);

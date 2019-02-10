@@ -1,7 +1,7 @@
 #pragma once
 
 // Массив операторов
-const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";"};
+const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
 // Массив команд
 const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for"};
 // Массив ключевых слов
@@ -29,24 +29,15 @@ public:
 	std::string data;
 	// Статика данных
 	bool isVariable;
+	// Вектор инструкицй (если это массив)
+	std::vector<Instruction> array;
+	// Мап инструкицй (если это массив)
+	std::map<std::string, Instruction> array_map;
+	// Указатель на инструкцию из списка всех переменных (для массива)
+	Instruction *ptr;
 
 	Instruction() {}
 	Instruction(const std::string body);
-};
-
-
-class Data : public Instruction
-{
-private:
-public:
-};
-
-
-
-class Tab : Instruction
-{
-private:
-public:
 };
 
 class LineInstructions
