@@ -17,6 +17,8 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
 					read_script(session, page_object, i + 1, j + 1);
+
+
 					count_lines_of_file = page_object.all_lines.size();
 					break;
 				}
@@ -269,6 +271,8 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 Instruction::Instruction(const std::string body)
 {
 	this->body = body;
+	this->ptr = nullptr;
+	this->selected_char = -1;
 
 	if (std::find(OPERATORS.begin(), OPERATORS.end(), body) != OPERATORS.end())
 		this->type_of_instruction = TYPE_OF_INSTRUCTION::OPERATOR;

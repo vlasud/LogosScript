@@ -33,8 +33,12 @@ public:
 	std::vector<Instruction> array;
 	// Мап инструкицй (если это массив)
 	std::map<std::string, Instruction> array_map;
-	// Указатель на инструкцию из списка всех переменных (для массива)
+	// Какой массив используется? (true - array; false - array_map)
+	bool why_array_is_used;
+	// Указатель на массив из списка всех переменных (для массива)
 	Instruction *ptr;
+	// Выбранный символ в строке (Для обращения к строке как к массиву)
+	int selected_char;
 
 	Instruction() {}
 	Instruction(const std::string body);
