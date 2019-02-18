@@ -1,20 +1,20 @@
 
 <#
-	
-	array = {12, 512, 21, 0, 45}
+	text = "Hello, my name is vova. how are you?"
 
-	for(i = 0; i < 5; i++)
-		for(j = 0; j < 5; j++)
-			if(array[i] > array[j])
-				tmp = array[j]
-				array[j] = array[i]
-				array[i] = tmp
+	counter = 0
+	max_counter = 0
 
-	a = array[0]
-	b = array[1]
-	c = array[2]
-	d = array[3]
-	e = array[4]
+	for(i = 0; i < text; i++)
+		if(!(text[i] >= "a" && text[i] <= "z" || text[i] >= "A" && text[i] <= "Z")  || i == 36)
+			if(counter > 0 && counter > max_counter)
+				max_counter = counter
+				result = string
+			counter = 0
+			string = null
+		else
+			counter++
+			string += text[i]
 #>
 
  
