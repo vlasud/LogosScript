@@ -1,12 +1,17 @@
 
 <#
-	fun Power(number, pow)
+	n = 100
+
+	fun Power(number, pow, c)
 		temp = number
 		for(i = 0; i < pow - 1; i++)
 			number *= temp
-		return number
+
+		global n
+		n = 1000
+		return number + n
 
 
-	test = Power(10, 3)
+	test = Power(10, 3) + n
 #>
 

@@ -201,7 +201,7 @@ void do_script(Session &session)
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
 					// Если это функция
-					if (j < session.lines[i].instructions.size() && session.lines[i].instructions[j + 1].body == "(")
+					if (j < session.lines[i].instructions.size() - 1 && session.lines[i].instructions[j + 1].body == "(")
 					{
 						if (session.definition_functions.find(session.lines[i].instructions[j].body) != session.definition_functions.end())
 						{
@@ -219,6 +219,8 @@ void do_script(Session &session)
 							do_script(session, tmp->begin, tmp->end, false, tmp);
 
 							session.lines[i].instructions[j] = tmp->result;
+							
+							// Удаление лишних инструкций после вызова функций
 							for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
 								&& session.lines[i].instructions[p].body != ")"; p++)
 							{
@@ -297,8 +299,11 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
 						// Если переменная не нашлась в локальной видимости, то ищем ее в глобальной
-						if (session.all_data_buffer.find(session.lines[i].instructions[j].body) != session.all_data_buffer.end())
+						if (j > 0 && session.lines[i].instructions[j - 1].body == "global" && session.all_data_buffer.find(session.lines[i].instructions[j].body) != session.all_data_buffer.end())
+						{
 							session.all_data[session.all_data_buffer.find(session.lines[i].instructions[j].body)->second.body] = session.all_data_buffer.find(session.lines[i].instructions[j].body)->second;
+							session.all_data[session.all_data_buffer.find(session.lines[i].instructions[j].body)->second.body].isUsedHasGlobal = true;
+						}
 						// Иначе если переменной с таким именем вовсе не существует
 						else
 						{
@@ -333,6 +338,14 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 	if (func != nullptr)
 	{
+		// Обновить данные с модификатором global
+		for (auto b = session.all_data.begin(); b != session.all_data.end(); b++)
+			if (b->second.isUsedHasGlobal)
+			{
+				b->second.isUsedHasGlobal = false;
+				session.all_data_buffer[b->second.body] = b->second;
+			}
+
 		session.all_data = session.all_data_buffer;
 		session.all_data_buffer.clear();
 	}
