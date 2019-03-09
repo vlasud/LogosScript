@@ -324,7 +324,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 
 			if (!isOnlyData && do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1));
 
-			if (func->isReturn)
+			if (func != nullptr && func->isReturn)
 			{
 				func->isReturn = false;
 				break;

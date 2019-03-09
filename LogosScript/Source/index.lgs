@@ -1,12 +1,12 @@
 
 <#
-	
-	fun GetFirstNumber()
-		return 100
+	fun Power(number, pow)
+		temp = number
+		for(i = 0; i < pow - 1; i++)
+			number *= temp
+		return number
 
-	fun GetSecondNumber()
-		return 200
 
-	z = GetFirstNumber() + GetSecondNumber()
+	test = Power(10, 3)
 #>
 

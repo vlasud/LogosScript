@@ -77,6 +77,8 @@ struct FunctionDefinition
 		this->result.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 		this->result.type_of_data = TYPE_OF_DATA::_NONE;
 		this->result.data = "null";
+
+		this->isReturn = false;
 	}
 };
 
