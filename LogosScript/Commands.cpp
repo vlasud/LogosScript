@@ -215,6 +215,49 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				}
 				break;
 			}
+			else if (temp.body == "fun")
+			{
+				FunctionDefinition new_function;
+
+				// Поиск параметров функции
+				for (register unsigned int i = 2; i < session.lines[line].instructions.size(); i++)
+				{
+					if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+						new_function.parametrs.push_back(session.lines[line].instructions[i]);
+				}
+
+				// Поиск вхождения в новый уровень локального пространства
+				for (register int find_begin_new_counter = line + 1; find_begin_new_counter < session.lines.size(); find_begin_new_counter++)
+					if (session.lines[find_begin_new_counter].namespace_level == session.lines[line].namespace_level + 1)
+					{
+						new_function.begin = find_begin_new_counter;
+						break;
+					}
+
+				// Поиск конца нового уровеня локального пространства
+				new_function.end = line + 1;
+				while (new_function.end < session.lines.size() && (session.lines[new_function.end].namespace_level > session.lines[line].namespace_level
+					|| session.lines[new_function.end].namespace_level == 0))
+					new_function.end++;
+
+				if (new_function.end == -1) new_function.end = new_function.begin;
+				else new_function.end--;
+				if (new_function.end != -1)
+				{
+					session.definition_functions[session.lines[line].instructions[1].body] = new_function;
+				}
+				i = new_function.end;
+				break;
+			}
+			else if (temp.body == "return")
+			{
+				if (i < session.lines[line].instructions.size())
+					session.current_function->result = session.lines[line].instructions[i + 1];
+
+				session.current_function->isReturn = true;
+				return false;
+				break;
+			}
 		}
 	}
 	return false;

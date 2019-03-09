@@ -1,20 +1,12 @@
 
 <#
-	text = "Hello, my name is vova. how are you?"
+	
+	fun GetFirstNumber()
+		return 100
 
-	counter = 0
-	max_counter = 0
+	fun GetSecondNumber()
+		return 200
 
-	for(i = 0; i < text; i++)
-		if(!(text[i] >= "a" && text[i] <= "z" || text[i] >= "A" && text[i] <= "Z")  || i == 36)
-			if(counter > 0 && counter > max_counter)
-				max_counter = counter
-				result = string
-			counter = 0
-			string = null
-		else
-			counter++
-			string += text[i]
+	z = GetFirstNumber() + GetSecondNumber()
 #>
 
- 

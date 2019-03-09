@@ -194,17 +194,55 @@ void do_script(Session &session)
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
+
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
-					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
+					// Если это функция
+					if (j < session.lines[i].instructions.size() && session.lines[i].instructions[j + 1].body == "(")
 					{
-						session.lines[i].instructions[j].isVariable = true;
-						session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+						if (session.definition_functions.find(session.lines[i].instructions[j].body) != session.definition_functions.end())
+						{
+							int param_counter = -1;
+							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
+
+							// Копирование параметров
+							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
+								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+								{
+									tmp->parametrs[++param_counter].data = session.lines[i].instructions[z].data;
+									tmp->parametrs[param_counter].type_of_data = session.lines[i].instructions[z].type_of_data;
+								}
+
+							do_script(session, tmp->begin, tmp->end, false, tmp);
+
+							session.lines[i].instructions[j] = tmp->result;
+							for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
+								&& session.lines[i].instructions[p].body != ")"; p++)
+							{
+								session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
+								p--;
+							}
+							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+
+						}
+						else
+						{
+							// Ошибка. Неизвестная функция
+						}
 					}
-					else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
+					// Иначе если переменная
+					else
+					{
+						if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
+						{
+							session.lines[i].instructions[j].isVariable = true;
+							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+						}
+						else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
+					}
 				}
 				else
 				{
@@ -225,9 +263,24 @@ void do_script(Session &session)
 	}
 }
 
-void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData)
+void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func)
 // Выполнение скрипта
 {
+	// Если происходит выполнение функции, то переместить все данные в буффер
+	// И дальше заносить данные как локальные переменные
+	// После завершения функции вернуть данные из буфера
+	if (func != nullptr)
+	{
+		session.all_data_buffer = session.all_data;
+		session.all_data.clear();
+		
+		session.current_function = func;
+
+		// Внесение параметров в буффер локальных переменных
+		for (register unsigned int i = 0; i < func->parametrs.size(); i++)
+			session.all_data[func->parametrs[i].body] = func->parametrs[i];
+	}
+
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
@@ -243,8 +296,15 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 				{
 					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
-						session.lines[i].instructions[j].isVariable = true;
-						session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+						// Если переменная не нашлась в локальной видимости, то ищем ее в глобальной
+						if (session.all_data_buffer.find(session.lines[i].instructions[j].body) != session.all_data_buffer.end())
+							session.all_data[session.all_data_buffer.find(session.lines[i].instructions[j].body)->second.body] = session.all_data_buffer.find(session.lines[i].instructions[j].body)->second;
+						// Иначе если переменной с таким именем вовсе не существует
+						else
+						{
+							session.lines[i].instructions[j].isVariable = true;
+							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+						}
 					}
 					else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
 				}
@@ -263,7 +323,18 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
 
 			if (!isOnlyData && do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1));
+
+			if (func->isReturn)
+			{
+				func->isReturn = false;
+				break;
+			}
 		}
+	}
+	if (func != nullptr)
+	{
+		session.all_data = session.all_data_buffer;
+		session.all_data_buffer.clear();
 	}
 }
 

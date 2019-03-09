@@ -29,10 +29,7 @@ public:
 		// Определение типа файла (простой html или скриптовый)
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		register unsigned int size = path.length() - 1;
-		if (path[size] == 's' && path[size - 1] == 'g' && path[size - 2] == 'l')
-			isScriptFile = true;
-		else 
-			isScriptFile = false;
+		isScriptFile = path[size] == 's' && path[size - 1] == 'g' && path[size - 2] == 'l';
 	}
 
 	std::string getName(void)

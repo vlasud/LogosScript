@@ -87,7 +87,7 @@ void client_handler(const SOCKET client_socket)
 	}
 }
 
-unsigned int getSize(const char *text)
+size_t getSize(const char *text)
 // Определение размера
 {
 	unsigned int counter = 0;
@@ -111,7 +111,7 @@ void loadPages(const std::string dir = "")
 		{
 			do
 			{
-				unsigned int size = getSize(winFileData.cFileName);
+				size_t size = getSize(winFileData.cFileName);
 				for (register unsigned int i = 0; i < size; i++)
 				{
 					if (winFileData.cFileName[0] == '.') break;

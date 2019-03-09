@@ -3,7 +3,7 @@
 // Массив операторов
 const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 
@@ -13,6 +13,7 @@ enum TYPE_OF_INSTRUCTION { DATA, OPERATOR, COMMAND, TAB};
 enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
+
 
 class Instruction
 {
@@ -57,15 +58,41 @@ public:
 	int namespace_level;
 };
 
+// Определение функции
+struct FunctionDefinition
+{
+	// Начало функции
+	int begin;
+	// Конец функции
+	int end;
+	// Параметры функции
+	std::vector<Instruction> parametrs;
+	// Результат (что вернула функция)
+	Instruction result;
+	// Если была вызвана инструкция return
+	bool isReturn;
+
+	FunctionDefinition()
+	{
+		this->result.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+		this->result.type_of_data = TYPE_OF_DATA::_NONE;
+		this->result.data = "null";
+	}
+};
+
 class Session
 {
 private:
 
 public:
 	std::vector<LineInstructions> lines;
+	// Хэш обьявленных функций
+	std::map<std::string, FunctionDefinition> definition_functions;
 
 	// Ассоциативный массив всех данных скрипта
 	std::map<std::string, Instruction> all_data;
+	// Ассоциативный массив всех данных скрипта (буффер)
+	std::map<std::string, Instruction> all_data_buffer;
 
 	// Последняя выполненая команда
 	std::string last_command;
@@ -74,4 +101,7 @@ public:
 
 	// Начальный уровень локального пространства скрипта
 	unsigned int start_level;
+
+	// Текущая выполняемая функция
+	FunctionDefinition *current_function = nullptr;
 };
