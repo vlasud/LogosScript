@@ -139,6 +139,13 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 
 								session.last_command_success = true;
 								do_script(session, begin_new, end_new);
+
+								// Если была вызвана инструкция break
+								if (session.isBreak)
+								{
+									session.isBreak = false;
+									return true;
+								}
 							}
 						}
 					}
@@ -209,6 +216,13 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 
 						session.last_command_success = true;
 						do_script(session, begin_new, end_new);
+
+						// Если была вызвана инструкция break
+						if (session.isBreak)
+						{
+							session.isBreak = false;
+							return true;
+						}
 					}
 					session.lines[line].instructions = thr_commands_of_loop;
 					do_script(session, line, line, true);
@@ -249,10 +263,25 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				i = new_function.end;
 				break;
 			}
+			else if (temp.body == "continue")
+			{
+				session.isContinue = true;
+				break;
+			}
+			else if (temp.body == "break")
+			{
+				session.isBreak= true;
+				break;
+			}
 			else if (temp.body == "return")
 			{
 				if (i < session.lines[line].instructions.size())
-					session.current_function->result = session.lines[line].instructions[i + 1];
+				{
+					session.current_function->result			= session.lines[line].instructions[i + 1];
+					session.current_function->result.isVariable = false;
+					session.current_function->result.body		= "function_value";
+					session.current_function->result.ptr		= nullptr;
+;				}
 
 				session.current_function->isReturn = true;
 				return false;

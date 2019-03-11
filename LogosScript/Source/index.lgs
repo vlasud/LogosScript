@@ -1,17 +1,12 @@
-
 <#
-	n = 100
+	fun strlen(text)
+		for(i = 0; i < text; i++)
+		return i - 1
 
-	fun Power(number, pow, c)
-		temp = number
-		for(i = 0; i < pow - 1; i++)
-			number *= temp
+	if(strlen("Hell") < 5)
+		answer = "Password is short!"
+	else
+		answer = "OK"
 
-		global n
-		n = 1000
-		return number + n
-
-
-	test = Power(10, 3) + n
 #>
 

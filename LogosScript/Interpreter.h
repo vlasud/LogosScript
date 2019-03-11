@@ -3,7 +3,7 @@
 // Массив операторов
 const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return", "global", "continue", "break"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return", "global", "continue", "break", "const"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 
@@ -40,9 +40,10 @@ public:
 	Instruction *ptr;
 	// Выбранный символ в строке (Для обращения к строке как к массиву)
 	int selected_char;
-
 	// Если перед данными был указан модификатор global
 	bool isUsedHasGlobal = false;
+	// Если это константа
+	bool isConst = false;
 
 	Instruction() {}
 	Instruction(const std::string body);
@@ -103,6 +104,11 @@ public:
 	std::string last_command;
 	bool last_command_success;
 	//
+
+	// Была ли вызвана команда continue
+	bool isContinue = false;
+	// Была ли вызвана команда break
+	bool isBreak = false;
 
 	// Начальный уровень локального пространства скрипта
 	unsigned int start_level;

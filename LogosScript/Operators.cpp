@@ -2090,6 +2090,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
+			if (session.lines[line].instructions[i - 1].isConst && session.lines[line].instructions[i - 1].type_of_data != TYPE_OF_DATA::_NONE)
+			{
+				// Ошибка. Константу нельзя изменять
+				return;
+			}
+
 			Instruction temp = session.lines[line].instructions[i];
 
 			if (temp.body == "=")

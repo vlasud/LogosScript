@@ -214,6 +214,8 @@ void do_script(Session &session)
 								{
 									tmp->parametrs[++param_counter].data = session.lines[i].instructions[z].data;
 									tmp->parametrs[param_counter].type_of_data = session.lines[i].instructions[z].type_of_data;
+									tmp->parametrs[param_counter].array = session.lines[i].instructions[z].array;
+									tmp->parametrs[param_counter].array_map = session.lines[i].instructions[z].array_map;
 								}
 
 							do_script(session, tmp->begin, tmp->end, false, tmp);
@@ -241,6 +243,11 @@ void do_script(Session &session)
 						if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 						{
 							session.lines[i].instructions[j].isVariable = true;
+
+							// Если перед переменной стоит модификатор константы
+							if (j > 0 && session.lines[i].instructions[j - 1].body == "const")
+								session.lines[i].instructions[j].isConst = true;
+
 							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 						}
 						else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
@@ -286,7 +293,21 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
+		// Если была вызвана вызвана инструкция continue
+		if (session.isContinue)
+		{
+			session.isContinue = false;
+			return;
+		}
+		// Если была вызвана вызвана инструкция break
+		if (session.isContinue) return;
+
 		if (session.lines[i].namespace_level != start_level) continue;
+
+		// Восстановление использованных инструкций
+		if (func != nullptr && session.lines[i].copy_instructions.size() != 0 
+			&& session.lines[i].copy_instructions.size() != session.lines[i].instructions.size())
+			session.lines[i].instructions = session.lines[i].copy_instructions;
 
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
@@ -308,6 +329,11 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 						else
 						{
 							session.lines[i].instructions[j].isVariable = true;
+
+							// Если перед переменной стоит модификатор константы
+							if (j > 0 && session.lines[i].instructions[j - 1].body == "const")
+								session.lines[i].instructions[j].isConst = true;
+
 							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 						}
 					}
