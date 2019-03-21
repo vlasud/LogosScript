@@ -115,12 +115,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ErrorCore.h" />
     <ClInclude Include="Global.h" />
     <ClInclude Include="Interpreter.h" />
+    <ClInclude Include="Output.h" />
     <ClInclude Include="Page.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Commands.cpp" />
+    <ClCompile Include="ErrorCore.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="Operators.cpp" />
     <ClCompile Include="Source.cpp" />

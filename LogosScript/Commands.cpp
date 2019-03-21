@@ -59,6 +59,8 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					else if (find_data_counter == end)
 					{
 						// Синтаксическая ошибка
+						session.error = new ErrorCore("this command must have a logical expression", line);
+						return true;
 					}
 				}
 			}
@@ -152,6 +154,8 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					else if (find_data_counter == end)
 					{
 						// Синтаксическая ошибка
+						session.error = new ErrorCore("this command must have a logical expression", line);
+						return true;
 					}
 				}
 			}
@@ -175,6 +179,11 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 						second_commands_of_loop.push_back(session.lines[line].instructions[i]);
 					else if (divide_operator_counter == 2)
 						thr_commands_of_loop.push_back(session.lines[line].instructions[i]);
+				}
+				if (divide_operator_counter < 2)
+				{
+					session.error = new ErrorCore("command must contain 3 blocks", line);
+					return true;
 				}
 				//
 

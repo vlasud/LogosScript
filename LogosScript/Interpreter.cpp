@@ -6,6 +6,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 {
 	Page page_object = all_pages[file_id];
 	Session session;
+	bool isError = false;
 
 	unsigned int count_lines_of_file = all_pages[file_id].all_lines.size();
 
@@ -18,10 +19,27 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 				{
 					read_script(session, page_object, i + 1, j + 1);
 
+					// Если была синтаксическая ошибка - показать сообщение ошибки
+					if (session.error != nullptr)
+					{
+						page_object.all_lines.clear();
+						page_object.all_lines.push_back(session.error->get_error_text());
+						isError = true;
+						break;
+					}
+					// Иначе заменить исполняемый скрипт на результат работы скрипта
+					else
+					{
+						page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
+						for (register unsigned int mn = 0; mn < session.output.output_data.size(); mn++)
+							page_object.all_lines.insert(page_object.all_lines.begin() + i, session.output.output_data[mn]);
+					}
 
 					count_lines_of_file = page_object.all_lines.size();
 					break;
 				}
+			if (isError)
+				break;
 		}
 	}
 
@@ -186,7 +204,16 @@ void do_script(Session &session)
 	// Размер массива строк
 	unsigned int session_lines_size = session.lines.size();
 
-	session.start_level = session.lines[0].namespace_level;
+	// Определение начального уровня локального пространства
+	for (register unsigned int i = 0; i < session_lines_size; i++)
+	{
+		if (session.lines[i].instructions.size() > 0)
+		{
+			session.start_level = session.lines[i].namespace_level;
+			break;
+		}
+	}
+
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
 		if (session.lines[i].namespace_level != session.start_level) continue;
@@ -232,9 +259,12 @@ void do_script(Session &session)
 							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
 
 						}
+						
 						else
 						{
 							// Ошибка. Неизвестная функция
+							session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
+							return;
 						}
 					}
 					// Иначе если переменная
@@ -267,7 +297,11 @@ void do_script(Session &session)
 			if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
 
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			if (session.error != nullptr) return;
 			do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1);
+			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			if (session.error != nullptr) return;
 		}
 	}
 }
@@ -352,8 +386,12 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 			if(session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
 
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
+			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			if (session.error != nullptr) return;
 
 			if (!isOnlyData && do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1));
+			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			if (session.error != nullptr) return;
 
 			if (func != nullptr && func->isReturn)
 			{
@@ -377,6 +415,10 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 }
 
+Session::~Session()
+{
+	delete this->error;
+}
 
 Instruction::Instruction(const std::string body)
 {

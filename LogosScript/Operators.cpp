@@ -62,6 +62,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 											else
 											{
 												// Синтаксическая ошибка...
+												session.error = new ErrorCore("out of bounds array", line);
+												return;
 											}
 										}
 										// Иначе если массив существует
@@ -625,6 +627,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else if (temp.body == "/")
@@ -798,6 +802,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else continue;
@@ -985,6 +991,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else if (temp.body == "-")
@@ -2093,6 +2101,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			if (session.lines[line].instructions[i - 1].isConst && session.lines[line].instructions[i - 1].type_of_data != TYPE_OF_DATA::_NONE)
 			{
 				// Ошибка. Константу нельзя изменять
+				session.error = new ErrorCore("constant not subject to change", line);
 				return;
 			}
 
@@ -2110,6 +2119,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else if (temp.body == "+=")
@@ -2324,6 +2335,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else if (temp.body == "-=")
@@ -2744,6 +2757,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 			else if (temp.body == "*=")
@@ -2954,6 +2969,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
+					session.error = new ErrorCore("data should be left of the operator", line);
+					return;
 				}
 			}
 		}

@@ -11,6 +11,8 @@
 #include <fstream>
 #include <algorithm>
 #include "Page.h"
+#include "ErrorCore.h"
+#include "Output.h"
 #include "Interpreter.h"
 
 #define EMPTY ""

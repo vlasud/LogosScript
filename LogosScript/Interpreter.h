@@ -1,4 +1,3 @@
-#pragma once
 
 // Массив операторов
 const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
@@ -13,7 +12,6 @@ enum TYPE_OF_INSTRUCTION { DATA, OPERATOR, COMMAND, TAB};
 enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
-
 
 class Instruction
 {
@@ -110,9 +108,14 @@ public:
 	// Была ли вызвана команда break
 	bool isBreak = false;
 
+	ErrorCore *error = nullptr;
+	Output output;
+
 	// Начальный уровень локального пространства скрипта
 	unsigned int start_level;
 
 	// Текущая выполняемая функция
 	FunctionDefinition *current_function = nullptr;
+
+	~Session();
 };

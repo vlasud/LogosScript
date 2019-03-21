@@ -1,12 +1,9 @@
+<h1>Hello</h1>
 <#
-	fun strlen(text)
-		for(i = 0; i < text; i++)
-		return i - 1
 
-	if(strlen("Hell") < 5)
-		answer = "Password is short!"
-	else
-		answer = "OK"
+	const a = 100
 
+ 
 #>
+<h1>Hello</h1>
 
