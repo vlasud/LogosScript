@@ -31,6 +31,10 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 					else
 					{
 						page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
+
+						// Перевернуть вектор
+						std::reverse(session.output.output_data.begin(), session.output.output_data.end());
+
 						for (register unsigned int mn = 0; mn < session.output.output_data.size(); mn++)
 							page_object.all_lines.insert(page_object.all_lines.begin() + i, session.output.output_data[mn]);
 					}
@@ -54,10 +58,6 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 
 	send(client_socket, response.c_str(), response.length(), 0);
 	closesocket(client_socket);
-
-	std::cout << "Variables: " << std::endl;
-	for (auto i = session.all_data.begin(); i != session.all_data.end(); i++)
-		std::cout << i->second.body << " = " << i->second.data << std::endl;
 }
 
 std::string format_data(std::string data)
@@ -218,6 +218,9 @@ void do_script(Session &session)
 	{
 		if (session.lines[i].namespace_level != session.start_level) continue;
 
+		// Сохранение инструкций перед их выполнением
+		if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
+
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
@@ -259,12 +262,56 @@ void do_script(Session &session)
 							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
 
 						}
-						
-						else
+						for (register u_int b = 0; b < system_functions.size(); b++)
 						{
-							// Ошибка. Неизвестная функция
-							session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
-							return;
+							if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
+							{
+								SystemFunction tmp = system_functions[b];
+								byte param_counter = 1;
+
+								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+								{
+									if (session.lines[i].instructions[z].body == ")")
+									{
+										do_line_script_operators(session, i, j + 1, z);
+										break;
+									}
+								}
+								for (register u_int z = j; z < session.lines[i].instructions.size(); z++)
+								{
+									if (session.lines[i].instructions[z].body == ",") param_counter++;
+									else if (session.lines[i].instructions[z].body == ")") break;
+								}
+								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+								{
+									if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+									{
+										tmp.set_params(session.lines[i].instructions[z]);
+										if (--param_counter == 0) break;
+									}
+									else if (session.lines[i].instructions[z].body == ")")
+										break;
+								}
+
+								tmp.start_function(&session);
+
+								session.lines[i].instructions[j] = tmp.get_result();
+
+								// Удаление лишних инструкций после вызова функций
+								for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
+									&& session.lines[i].instructions[p].body != ")"; p++)
+								{
+									session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
+									p--;
+								}
+								break;
+							}
+							else if (b == system_functions.size() - 1)
+							{
+								// Ошибка. Неизвестная функция
+								session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
+								return;
+							}
 						}
 					}
 					// Иначе если переменная
@@ -293,9 +340,6 @@ void do_script(Session &session)
 
 		if (session.lines[i].instructions.size() > 0)
 		{
-			// Сохранение инструкций перед их выполнением
-			if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
-
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
 			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
 			if (session.error != nullptr) return;
@@ -343,6 +387,9 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 			&& session.lines[i].copy_instructions.size() != session.lines[i].instructions.size())
 			session.lines[i].instructions = session.lines[i].copy_instructions;
 
+		// Сохранение инструкций перед их выполнением
+		if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
+
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
@@ -351,6 +398,87 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
+					// Если это функция
+					if (j < session.lines[i].instructions.size() - 1 && session.lines[i].instructions[j + 1].body == "(")
+					{
+						if (session.definition_functions.find(session.lines[i].instructions[j].body) != session.definition_functions.end())
+						{
+							int param_counter = -1;
+							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
+
+							// Копирование параметров
+							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
+								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+								{
+									tmp->parametrs[++param_counter].data = session.lines[i].instructions[z].data;
+									tmp->parametrs[param_counter].type_of_data = session.lines[i].instructions[z].type_of_data;
+									tmp->parametrs[param_counter].array = session.lines[i].instructions[z].array;
+									tmp->parametrs[param_counter].array_map = session.lines[i].instructions[z].array_map;
+								}
+
+							do_script(session, tmp->begin, tmp->end, false, tmp);
+
+							session.lines[i].instructions[j] = tmp->result;
+
+							// Удаление лишних инструкций после вызова функций
+							for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
+								&& session.lines[i].instructions[p].body != ")"; p++)
+							{
+								session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
+								p--;
+							}
+							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+
+						}
+						for (register u_int b = 0; b < system_functions.size(); b++)
+						{
+							if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
+							{
+								SystemFunction tmp = system_functions[b];
+
+
+								u_int param_counter = 1;
+								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+								{
+									if (session.lines[i].instructions[z].body == ",") param_counter++;
+									else if (session.lines[i].instructions[z].body == ")")
+									{
+										do_line_script_operators(session, i, j + 1, z);
+										break;
+									}
+								}
+
+
+								for (register unsigned int z = 0; z < session.lines[i].instructions.size(); z++)
+									if (session.lines[i].instructions[j + z + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+									{
+										tmp.set_params(session.lines[i].instructions[j + z + 1]);
+
+										if (--param_counter == 0) break;
+									}
+
+								tmp.start_function(&session);
+
+								session.lines[i].instructions[j] = tmp.get_result();
+
+								// Удаление лишних инструкций после вызова функций
+								for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
+									&& session.lines[i].instructions[p].body != ")"; p++)
+								{
+									session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
+									p--;
+								}
+								break;
+							}
+							else if (b == system_functions.size() - 1)
+							{
+								// Ошибка. Неизвестная функция
+								session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
+								return;
+							}
+						}
+					}
+					// Иначе если переменная
 					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
 						// Если переменная не нашлась в локальной видимости, то ищем ее в глобальной
@@ -382,9 +510,6 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		}
 		if (session.lines[i].instructions.size() > 0)
 		{
-			// Сохранение инструкций перед их выполнением
-			if(session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
-
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
 			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
 			if (session.error != nullptr) return;

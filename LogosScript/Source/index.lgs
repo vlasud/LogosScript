@@ -1,9 +1,5 @@
-<h1>Hello</h1>
 <#
+	
+	write(write("hello"))
 
-	const a = 100
-
- 
 #>
-<h1>Hello</h1>
-

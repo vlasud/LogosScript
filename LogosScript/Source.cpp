@@ -25,7 +25,7 @@ void client_handler(const SOCKET client_socket)
 		char* temp = new char[res];
 		for (register unsigned short i = 0; i < res; i++)
 			temp[i] = buffer[i];
-		std::cout << temp << std::endl;
+
 		// Файл, который запросил клиент
 		std::string file_name = "/";
 		bool isFound = false;

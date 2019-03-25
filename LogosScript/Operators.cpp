@@ -4,7 +4,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 // Выполнение часть инструкций в строке. Работа с операторами
 {
 	// Парсинг фигурных скобочек (для массива)
-	parse_array_brackets(session, line, begin, end);
+	end -= parse_array_brackets(session, line, begin, end);
 
 	for (register int i = begin; i <= end; i++)
 	{
@@ -2977,9 +2977,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	}
 }
 
-void parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int end)
+int parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int end)
 // Парсинг фигурных собочек
 {
+	int sub = 0;
 	for (register int i = begin; i <= end; i++)
 	{
 		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
@@ -3004,6 +3005,7 @@ void parse_array_brackets(Session &session, const unsigned int line, const unsig
 						for (register unsigned int z = i + 1; z <= j; z++)
 						{
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + z);
+							sub++;
 							end--;
 							z--;
 							j--;
@@ -3034,6 +3036,7 @@ void parse_array_brackets(Session &session, const unsigned int line, const unsig
 			}
 		}
 	}
+	return sub;
 }
 
 void write_data_from_local_to_global(Session &session, Instruction &first, Instruction &second)
