@@ -1,5 +1,8 @@
 <#
 	
-	write(write("hello"))
+	
+
+	write(len(remove({123,123,2}, 2)))
+
 
 #>

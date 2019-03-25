@@ -37,7 +37,7 @@ Instruction& SystemFunction::get_result_instruction(void)
 	return this->result_of_function;
 }
 
-std::vector<Instruction> SystemFunction::get_instructions(void) const
+const std::vector<Instruction> SystemFunction::get_instructions(void)
 {
 	return this->instructions_of_function;
 }
@@ -56,6 +56,7 @@ Session * SystemFunction::get_session(void)
 
 void len(SystemFunction *object)
 // Возвращает длину строки
+// 1 параметр
 {
 	Instruction *res = &object->get_result_instruction();
 	const std::vector<Instruction> &instructions = object->get_instructions();
@@ -67,9 +68,48 @@ void len(SystemFunction *object)
 
 void write(SystemFunction *object)
 // Вывод информации в документ
+// 1 параметр
 {
 	Instruction *res = &object->get_result_instruction();
 	const std::vector<Instruction> &instructions = object->get_instructions();
 
 	object->get_session()->output.output_data.push_back(instructions[0].data);
+}
+
+void substr(SystemFunction *object)
+// Обрезает строку
+// 3 параметра
+// [строка, начало, кол-во символов]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+
+	res->data = instructions[0].data.substr(atoi(instructions[1].data.c_str()), atoi(instructions[2].data.c_str()));
+}
+
+void remove(SystemFunction *object)
+// Удаляет данный объект из массива/строки
+// 2 параметра
+// [строка, искомый элемент]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	if (result.array.size() > 0)
+	{
+		for (register u_int i = 0; i < instructions[0].array.size(); i++)
+		{
+			if (result.array[i].data == instructions[1].data)
+			{
+				result.array.erase(result.array.begin() + i);
+				i -= 2;
+			}
+		}
+	}
+	else if (result.type_of_data == TYPE_OF_DATA::_STRING)
+	{
+		result.data = strstr(result.data.c_str(), instructions[1].data.c_str());
+	}
+	*res = result;
 }

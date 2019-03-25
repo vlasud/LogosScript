@@ -14,7 +14,7 @@ public:
 	std::string get_name(void) const;
 	Instruction get_result(void) const;
 	Instruction& get_result_instruction(void);
-	std::vector<Instruction> get_instructions(void) const;
+	const std::vector<Instruction> get_instructions(void);
 	Session *get_session(void);
 	void start_function(Session *session);
 	void set_params(Instruction &parametr);
@@ -27,11 +27,16 @@ public:
 void write(SystemFunction *object);
 // Длина строки или масива
 void len(SystemFunction *object);
-
+// Обрезать строку
+void substr(SystemFunction *object);
+// Удалить из массива/строки
+void remove(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
 {
 	SystemFunction {"write", 1, write},
-	SystemFunction {"len", 1, len}
+	SystemFunction {"len", 1, len},
+	SystemFunction {"substr", 3, substr},
+	SystemFunction {"remove", 2, remove}
 };
