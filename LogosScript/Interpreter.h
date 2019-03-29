@@ -87,7 +87,8 @@ struct FunctionDefinition
 class Session
 {
 private:
-
+	u_int start_line;
+	u_int current_line;
 public:
 	std::vector<LineInstructions> lines;
 	// Хэш обьявленных функций
@@ -117,5 +118,10 @@ public:
 	// Текущая выполняемая функция
 	FunctionDefinition *current_function = nullptr;
 
+	Session(u_int start_line);
 	~Session();
+
+	u_int get_start_line(void);
+	u_int get_current_line(void);
+	void update_current_line(u_int new_line);
 };

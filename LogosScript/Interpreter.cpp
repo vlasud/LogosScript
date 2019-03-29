@@ -5,7 +5,6 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 // file_id - смещение вектора файлов сайта
 {
 	Page page_object = all_pages[file_id];
-	Session session;
 	bool isError = false;
 
 	unsigned int count_lines_of_file = all_pages[file_id].all_lines.size();
@@ -17,6 +16,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 			for (unsigned register int j = i; j < count_lines_of_file; j++)
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
+					Session session(i + 2);
 					read_script(session, page_object, i + 1, j + 1);
 
 					// Если была синтаксическая ошибка - показать сообщение ошибки
@@ -175,12 +175,10 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 					}
 					else
 					{
-						for (register unsigned int z = 0; z < 2; z++)
-						{
-							if (std::find(OPERATORS.begin(), OPERATORS.end(), std::string{ word[z] }) != OPERATORS.end())
-								session.lines[line_counter].instructions.push_back(Instruction{ std::string { word[z]} });
-						}
-						word = EMPTY;
+						if (std::find(OPERATORS.begin(), OPERATORS.end(), std::string{ word[0] }) != OPERATORS.end())
+							session.lines[line_counter].instructions.push_back(Instruction{ std::string { word[0]} });
+
+						word = word[1];
 					}
 				}
 			}
@@ -216,6 +214,9 @@ void do_script(Session &session)
 
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
+		// Обновление номера текущей строки в файле
+		session.update_current_line(session.get_start_line() + i);
+
 		if (session.lines[i].namespace_level != session.start_level) continue;
 
 		// Сохранение инструкций перед их выполнением
@@ -224,7 +225,6 @@ void do_script(Session &session)
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 			// Если инструкция - данные
-
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
@@ -237,6 +237,15 @@ void do_script(Session &session)
 						{
 							int param_counter = -1;
 							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
+
+							for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+							{
+								if (session.lines[i].instructions[z].body == ")")
+								{
+									do_line_script_operators(session, i, j + 1, z - 1);
+									break;
+								}
+							}
 
 							// Копирование параметров
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
@@ -260,57 +269,56 @@ void do_script(Session &session)
 								p--;
 							}
 							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
-
+							continue;
 						}
-						for (register u_int b = 0; b < system_functions.size(); b++)
+						else if (j > 0 && session.lines[i].instructions[j - 1].body != "fun" || j == 0)
 						{
-							if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
+							for (register u_int b = 0; b < system_functions.size(); b++)
 							{
-								SystemFunction tmp = system_functions[b];
-								byte param_counter = 1;
-
-								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+								if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
 								{
-									if (session.lines[i].instructions[z].body == ")")
+									SystemFunction tmp = system_functions[b];
+									byte param_counter = 1;
+
+									for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
 									{
-										do_line_script_operators(session, i, j + 1, z);
-										break;
+										if (session.lines[i].instructions[z].body == ")")
+										{
+											do_line_script_operators(session, i, j + 1, z - 1);
+											break;
+										}
 									}
-								}
-								for (register u_int z = j; z < session.lines[i].instructions.size(); z++)
-								{
-									if (session.lines[i].instructions[z].body == ",") param_counter++;
-									else if (session.lines[i].instructions[z].body == ")") break;
-								}
-								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
-								{
-									if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+									for (register u_int z = j; z < session.lines[i].instructions.size(); z++)
 									{
-										tmp.set_params(session.lines[i].instructions[z]);
-										if (--param_counter == 0) break;
+										if (session.lines[i].instructions[z].body == ",") param_counter++;
+										else if (session.lines[i].instructions[z].body == ")")
+										{
+											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + z);
+											break;
+										}
 									}
-									else if (session.lines[i].instructions[z].body == ")")
-										break;
+									while(session.lines[i].instructions.size() > 1 && param_counter > 0)
+									{
+										if (session.lines[i].instructions[j + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+										{
+											tmp.set_params(session.lines[i].instructions[j + 1]);
+											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+											param_counter--;
+										}
+										else session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+									}
+
+									tmp.start_function(&session);
+
+									session.lines[i].instructions[j] = tmp.get_result();
+									break;
 								}
-
-								tmp.start_function(&session);
-
-								session.lines[i].instructions[j] = tmp.get_result();
-
-								// Удаление лишних инструкций после вызова функций
-								for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
-									&& session.lines[i].instructions[p].body != ")"; p++)
+								else if (b == system_functions.size() - 1)
 								{
-									session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
-									p--;
+									// Ошибка. Неизвестная функция
+									session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", &session);
+									return;
 								}
-								break;
-							}
-							else if (b == system_functions.size() - 1)
-							{
-								// Ошибка. Неизвестная функция
-								session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
-								return;
 							}
 						}
 					}
@@ -350,9 +358,10 @@ void do_script(Session &session)
 	}
 }
 
-void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func)
+void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func, bool isCommand)
 // Выполнение скрипта
 {
+
 	// Если происходит выполнение функции, то переместить все данные в буффер
 	// И дальше заносить данные как локальные переменные
 	// После завершения функции вернуть данные из буфера
@@ -371,6 +380,9 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
+		// Обновление номера текущей строки в файле
+		session.update_current_line(session.get_start_line() + i);
+
 		// Если была вызвана вызвана инструкция continue
 		if (session.isContinue)
 		{
@@ -383,7 +395,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		if (session.lines[i].namespace_level != start_level) continue;
 
 		// Восстановление использованных инструкций
-		if (func != nullptr && session.lines[i].copy_instructions.size() != 0 
+		if ((func != nullptr || isCommand) && session.lines[i].copy_instructions.size() != 0 
 			&& session.lines[i].copy_instructions.size() != session.lines[i].instructions.size())
 			session.lines[i].instructions = session.lines[i].copy_instructions;
 
@@ -392,6 +404,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
+
 			// Если инструкция - данные
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
@@ -406,6 +419,14 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							int param_counter = -1;
 							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
 
+							for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+							{
+								if (session.lines[i].instructions[z].body == ")")
+								{
+									do_line_script_operators(session, i, j + 1, z - 1);
+									break;
+								}
+							}
 							// Копирование параметров
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
@@ -427,59 +448,64 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 								session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
 								p--;
 							}
-							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
-
+							if(session.lines[i].instructions.size() > j + 1)
+								session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+							continue;
 						}
-						for (register u_int b = 0; b < system_functions.size(); b++)
+						else if (j > 0 && session.lines[i].instructions[j - 1].body != "fun" || j == 0)
 						{
-							if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
+							for (register u_int b = 0; b < system_functions.size(); b++)
 							{
-								SystemFunction tmp = system_functions[b];
-
-
-								u_int param_counter = 1;
-								for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
+								if (system_functions[b].get_name() == session.lines[i].instructions[j].body)
 								{
-									if (session.lines[i].instructions[z].body == ",") param_counter++;
-									else if (session.lines[i].instructions[z].body == ")")
+									SystemFunction tmp = system_functions[b];
+
+									u_int param_counter = 1;
+
+									for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
 									{
-										do_line_script_operators(session, i, j + 1, z);
-										break;
+										if (session.lines[i].instructions[z].body == ")")
+										{
+											do_line_script_operators(session, i, j + 1, z - 1);
+											break;
+										}
 									}
+									for (register u_int z = j; z < session.lines[i].instructions.size(); z++)
+									{
+										if (session.lines[i].instructions[z].body == ",") param_counter++;
+										else if (session.lines[i].instructions[z].body == ")")
+										{
+											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + z);
+											break;
+										}
+									}
+									while (session.lines[i].instructions.size() > 1 && param_counter > 0)
+									{
+										if (session.lines[i].instructions[j + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+										{
+											tmp.set_params(session.lines[i].instructions[j + 1]);
+											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+											param_counter--;
+										}
+										else session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+									}
+
+									tmp.start_function(&session);
+
+									session.lines[i].instructions[j] = tmp.get_result();
+									break;
 								}
-
-
-								for (register unsigned int z = 0; z < session.lines[i].instructions.size(); z++)
-									if (session.lines[i].instructions[j + z + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
-									{
-										tmp.set_params(session.lines[i].instructions[j + z + 1]);
-
-										if (--param_counter == 0) break;
-									}
-
-								tmp.start_function(&session);
-
-								session.lines[i].instructions[j] = tmp.get_result();
-
-								// Удаление лишних инструкций после вызова функций
-								for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
-									&& session.lines[i].instructions[p].body != ")"; p++)
+								else if (b == system_functions.size() - 1)
 								{
-									session.lines[i].instructions.erase(session.lines[i].instructions.begin() + p);
-									p--;
+									// Ошибка. Неизвестная функция
+									session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", &session);
+									return;
 								}
-								break;
-							}
-							else if (b == system_functions.size() - 1)
-							{
-								// Ошибка. Неизвестная функция
-								session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", i);
-								return;
 							}
 						}
 					}
 					// Иначе если переменная
-					if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
+					else if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
 						// Если переменная не нашлась в локальной видимости, то ищем ее в глобальной
 						if (j > 0 && session.lines[i].instructions[j - 1].body == "global" && session.all_data_buffer.find(session.lines[i].instructions[j].body) != session.all_data_buffer.end())
@@ -540,9 +566,28 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 }
 
+Session::Session(u_int start_line)
+{
+	this->start_line = start_line;
+}
+
 Session::~Session()
 {
 	delete this->error;
+}
+
+u_int Session::get_start_line(void)
+{
+	return this->start_line;
+}
+u_int Session::get_current_line(void)
+{
+	return this->current_line;
+}
+
+void Session::update_current_line(u_int new_line)
+{
+	this->current_line = new_line;
 }
 
 Instruction::Instruction(const std::string body)

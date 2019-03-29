@@ -30,7 +30,25 @@ void len(SystemFunction *object);
 // Обрезать строку
 void substr(SystemFunction *object);
 // Удалить из массива/строки
-void remove(SystemFunction *object);
+void removeAt(SystemFunction *object);
+// Добавить в массив/строку
+void add(SystemFunction *object);
+// Внедрить в массив/строку
+void insert(SystemFunction *object);
+// Заменить в массиве/строке
+void replace(SystemFunction *object);
+// Разбить строку на массив
+void split(SystemFunction *object);
+// Преобразовать к типу int
+void __int(SystemFunction *object);
+// Преобразовать к типу double
+void __double(SystemFunction *object);
+// Преобразовать к типу bool
+void __bool(SystemFunction *object);
+// Преобразовать к типу string
+void __str(SystemFunction *object);
+// Получить тип данных объекта
+void get_type(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
@@ -38,5 +56,14 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"write", 1, write},
 	SystemFunction {"len", 1, len},
 	SystemFunction {"substr", 3, substr},
-	SystemFunction {"remove", 2, remove}
+	SystemFunction {"removeAt", 2, removeAt},
+	SystemFunction {"add", 2, add},
+	SystemFunction {"insert", 3, insert},
+	SystemFunction {"replace", 3, replace},
+	SystemFunction {"split", 2, split},
+	SystemFunction {"int", 1, __int},
+	SystemFunction {"double", 1, __double },
+	SystemFunction {"bool", 1, __bool},
+	SystemFunction {"str", 1, __str},
+	SystemFunction {"get_type", 1, get_type},
 };

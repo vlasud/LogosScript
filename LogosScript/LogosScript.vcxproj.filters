@@ -27,10 +27,10 @@
     <ClInclude Include="Output.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="ErrorCore.h">
+    <ClInclude Include="FunctionsCore.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="FunctionsCore.h">
+    <ClInclude Include="ErrorCore.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

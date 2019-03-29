@@ -62,7 +62,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 											else
 											{
 												// Синтаксическая ошибка...
-												session.error = new ErrorCore("out of bounds array", line);
+												session.error = new ErrorCore("out of bounds array", &session);
 												return;
 											}
 										}
@@ -274,6 +274,13 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				if (i < end && session.lines[line].instructions[i + 1].isVariable && session.lines[line].instructions[i + 1].type_of_instruction
 					== TYPE_OF_INSTRUCTION::DATA)
 				{
+					if (session.lines[line].instructions[i + 1].isConst)
+					{
+						// Ошибка. Константу нельзя изменять
+						session.error = new ErrorCore("constant not subject to change", &session);
+						return;
+					}
+
 					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
@@ -304,6 +311,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					}
 					session.all_data.find(session.lines[line].instructions[i + 1].body)->second.data = session.lines[line].instructions[i + 1].data;
+					session.all_data.find(session.lines[line].instructions[i + 1].body)->second.type_of_data = session.lines[line].instructions[i + 1].type_of_data;
 
 					for (register int z = end; z >= begin; z--)
 					{
@@ -319,6 +327,13 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else if (i > begin && session.lines[line].instructions[i - 1].isVariable && session.lines[line].instructions[i - 1].type_of_instruction
 					== TYPE_OF_INSTRUCTION::DATA)
 				{
+					if (session.lines[line].instructions[i - 1].isConst)
+					{
+						// Ошибка. Константу нельзя изменять
+						session.error = new ErrorCore("constant not subject to change", &session);
+						return;
+					}
+
 					switch (session.lines[line].instructions[i - 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
@@ -356,6 +371,13 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			{
 				if (i < end && session.lines[line].instructions[i + 1].isVariable)
 				{
+					if (session.lines[line].instructions[i + 1].isConst)
+					{
+						// Ошибка. Константу нельзя изменять
+						session.error = new ErrorCore("constant not subject to change", &session);
+						return;
+					}
+
 					switch (session.lines[line].instructions[i + 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
@@ -400,6 +422,13 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else if (i > begin && session.lines[line].instructions[i - 1].isVariable)
 				{
+					if (session.lines[line].instructions[i - 1].isConst)
+					{
+						// Ошибка. Константу нельзя изменять
+						session.error = new ErrorCore("constant not subject to change", &session);
+						return;
+					}
+
 					switch (session.lines[line].instructions[i - 1].type_of_data)
 					{
 					case TYPE_OF_DATA::_INT:
@@ -627,7 +656,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -802,7 +831,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -991,7 +1020,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -1295,9 +1324,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1335,9 +1362,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1377,9 +1402,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1422,9 +1445,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1433,9 +1454,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-							&& session.lines[line].instructions[i + 1].data != "false")
-							session.lines[line].instructions[i - 1].data = "true";
+						session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -1498,9 +1517,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1538,9 +1555,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1580,9 +1595,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1625,9 +1638,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1636,9 +1647,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if (session.lines[line].instructions[i + 1].data != "0" && session.lines[line].instructions[i + 1].data != "null"
-							&& session.lines[line].instructions[i + 1].data != "false")
-							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].data = "true";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -1688,9 +1697,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1728,9 +1735,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1771,9 +1776,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1815,9 +1818,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "true";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1826,9 +1827,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if (session.lines[line].instructions[i + 1].data != "0"
-							&& session.lines[line].instructions[i + 1].data != "false")
-							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].data = "true";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -1878,9 +1877,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1918,9 +1915,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1961,9 +1956,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -2005,9 +1998,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							if (session.lines[line].instructions[i + 1].data != "0"
-								&& session.lines[line].instructions[i + 1].data != "false")
-								session.lines[line].instructions[i - 1].data = "false";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -2016,8 +2007,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if (session.lines[line].instructions[i + 1].data != "0"
-							&& session.lines[line].instructions[i + 1].data != "false")
+						if(session.lines[line].instructions[i + 1].data == "null") 
+							session.lines[line].instructions[i - 1].data = "true";
+						else 
 							session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
@@ -2101,7 +2093,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			if (session.lines[line].instructions[i - 1].isConst && session.lines[line].instructions[i - 1].type_of_data != TYPE_OF_DATA::_NONE)
 			{
 				// Ошибка. Константу нельзя изменять
-				session.error = new ErrorCore("constant not subject to change", line);
+				session.error = new ErrorCore("constant not subject to change", &session);
 				return;
 			}
 
@@ -2119,7 +2111,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -2335,7 +2327,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -2757,7 +2749,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}
@@ -2969,7 +2961,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				else
 				{
 					// ... синтаксическая ошибка
-					session.error = new ErrorCore("data should be left of the operator", line);
+					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
 			}

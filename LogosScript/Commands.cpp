@@ -50,7 +50,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 							if (begin_new != -1)
 							{
 								session.last_command_success = true;
-								do_script(session, begin_new, end_new);
+								do_script(session, begin_new, end_new, false, nullptr, true);
 								return false;
 							}
 						}
@@ -59,7 +59,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					else if (find_data_counter == end)
 					{
 						// Синтаксическая ошибка
-						session.error = new ErrorCore("this command must have a logical expression", line);
+						session.error = new ErrorCore("this command must have a logical expression", &session);
 						return true;
 					}
 				}
@@ -91,7 +91,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				if (begin_new != -1)
 				{
 					session.last_command_success = true;
-					do_script(session, begin_new, end_new);
+					do_script(session, begin_new, end_new, false, nullptr, true);
 					return false;
 				}
 			}
@@ -154,7 +154,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					else if (find_data_counter == end)
 					{
 						// Синтаксическая ошибка
-						session.error = new ErrorCore("this command must have a logical expression", line);
+						session.error = new ErrorCore("this command must have a logical expression", &session);
 						return true;
 					}
 				}
@@ -182,7 +182,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				}
 				if (divide_operator_counter < 2)
 				{
-					session.error = new ErrorCore("command must contain 3 blocks", line);
+					session.error = new ErrorCore("command must contain 3 blocks", &session);
 					return true;
 				}
 				//
@@ -284,7 +284,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 			}
 			else if (temp.body == "return")
 			{
-				if (i < session.lines[line].instructions.size())
+				if (i + 1 < session.lines[line].instructions.size())
 				{
 					session.current_function->result			= session.lines[line].instructions[i + 1];
 					session.current_function->result.isVariable = false;

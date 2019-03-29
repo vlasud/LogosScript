@@ -1,8 +1,6 @@
 <#
-	
-	
+	array = "Hello;world;how;are;you;"
 
-	write(len(remove({123,123,2}, 2)))
-
+	write(get_type(split(array, ";")[3]))
 
 #>
