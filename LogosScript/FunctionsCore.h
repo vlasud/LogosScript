@@ -39,6 +39,8 @@ void insert(SystemFunction *object);
 void replace(SystemFunction *object);
 // Разбить строку на массив
 void split(SystemFunction *object);
+// Возвращает индекс первого вхождения объекта
+void find(SystemFunction *object);
 // Преобразовать к типу int
 void __int(SystemFunction *object);
 // Преобразовать к типу double
@@ -48,7 +50,7 @@ void __bool(SystemFunction *object);
 // Преобразовать к типу string
 void __str(SystemFunction *object);
 // Получить тип данных объекта
-void get_type(SystemFunction *object);
+void typeof(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
@@ -61,9 +63,10 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"insert", 3, insert},
 	SystemFunction {"replace", 3, replace},
 	SystemFunction {"split", 2, split},
+	SystemFunction {"find", 2, find},
 	SystemFunction {"int", 1, __int},
 	SystemFunction {"double", 1, __double },
 	SystemFunction {"bool", 1, __bool},
 	SystemFunction {"str", 1, __str},
-	SystemFunction {"get_type", 1, get_type},
+	SystemFunction {"typeof", 1, typeof},
 };

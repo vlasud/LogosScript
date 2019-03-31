@@ -260,6 +260,61 @@ void split(SystemFunction *object)
 	*res = result;
 }
 
+void find(SystemFunction *object)
+// Разбивает строку на массив
+// 2 параметра
+// [строка/массив, символ разделитель]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+	int index = -1;
+
+	if (result.type_of_data == TYPE_OF_DATA::_STRING && result.array.size() == 0)
+	{
+		bool isFound = false;
+
+		for (register u_int i = 0; i < result.data.length(); i++)
+		{
+			if (result.data[i] == instructions[1].data[0])
+			{
+				for (register u_int j = 0; j < instructions[1].data.length(); j++)
+				{
+					if (result.data[i + j] != instructions[1].data[j]) break;
+					else if (j == instructions[1].data.length() - 1)
+					{
+						index = i;
+						isFound = true;
+					}
+				}
+				if (isFound)
+					break;
+			}
+		}
+	}
+	else if (result.array.size() > 0)
+	{
+		for (register u_int i = 0; i < result.array.size(); i++)
+		{
+			// ДОДЕЛАТЬ СРАВНЕНИЕ!
+			if (result.array[i].data == instructions[1].data && result.array[i].type_of_data == instructions[1].type_of_data)
+			{
+				index = i;
+				break;
+			}
+		}
+	}
+	else
+	{
+		// Синтаксическая ошибка. Принимает только массив или строку
+		object->get_session()->error = new ErrorCore("function accepts string/array only", object->get_session());
+		return;
+	}
+	result.type_of_data = TYPE_OF_DATA::_INT;
+	result.data = std::to_string(index);
+	*res = result;
+}
+
 void __int(SystemFunction *object)
 // Преобразование к типу int
 // 1 параметр
@@ -398,7 +453,7 @@ void __str(SystemFunction *object)
 	*res = result;
 }
 
-void get_type(SystemFunction *object)
+void typeof(SystemFunction *object)
 // Получить тип данных объекта
 // 1 параметр
 // [данные]
@@ -409,7 +464,7 @@ void get_type(SystemFunction *object)
 
 	std::string tmp_array[] = {"int", "string", "double", "boolean", "null"};
 
-	result.data = (result.array.size() > 0) ? "array" : tmp_array[result.type_of_data];
+	result.data = (result.array.size() > 0 && result.ptr == nullptr) ? "array" : tmp_array[result.type_of_data];
 	result.type_of_data = TYPE_OF_DATA::_STRING;
 	*res = result;
 }

@@ -132,6 +132,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + f);
 							i--;
 						}
+						end -= 3;
 						
 						break;
 					}

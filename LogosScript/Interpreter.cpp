@@ -284,7 +284,7 @@ void do_script(Session &session)
 									{
 										if (session.lines[i].instructions[z].body == ")")
 										{
-											do_line_script_operators(session, i, j + 1, z - 1);
+											do_line_script_operators(session, i, j + 2, z - 1);
 											break;
 										}
 									}
@@ -466,7 +466,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 									{
 										if (session.lines[i].instructions[z].body == ")")
 										{
-											do_line_script_operators(session, i, j + 1, z - 1);
+											do_line_script_operators(session, i, j + 2, z - 1);
 											break;
 										}
 									}

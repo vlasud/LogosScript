@@ -290,7 +290,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					session.current_function->result.isVariable = false;
 					session.current_function->result.body		= "function_value";
 					session.current_function->result.ptr		= nullptr;
-;				}
+				}
 
 				session.current_function->isReturn = true;
 				return false;
