@@ -23,9 +23,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						// Выполнить операции внутри скобочек
 						do_line_script_operators(session, line, f + 1, i - 1);
 
-						Instruction * first_node = &session.lines[line].instructions[f - 1];
-						Instruction * temp = &session.lines[line].instructions[f - 1];
-						temp->ptr = nullptr;
+						Instruction * first_node	= &session.lines[line].instructions[f - 1];
+						Instruction * temp			= &session.lines[line].instructions[f - 1];
+						temp->ptr					= nullptr;
 
 						for (register unsigned int s = f + 1; s < i; s++)
 						{
@@ -127,13 +127,15 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 
 						// Удаление использованных инструкций
-						for (register unsigned int b = 0; b < 3; b++)
+						bool flag = true;
+						do
 						{
+							if (session.lines[line].instructions[f].body == "]") flag = false;
+
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + f);
+							end--;
 							i--;
-						}
-						end -= 3;
-						
+						} while ((session.lines[line].instructions[f].body != "]" || flag) && f < session.lines[line].instructions.size());
 						break;
 					}
 				}
@@ -1251,7 +1253,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
 					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 				{
-					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "true" : "false";
+					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1] == session.lines[line].instructions[i + 1]) ? "true" : "false";
 					session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
@@ -1265,7 +1267,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
 					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 				{
-					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1].data == session.lines[line].instructions[i + 1].data) ? "false" : "true";
+					session.lines[line].instructions[i - 1].data = (session.lines[line].instructions[i - 1] == session.lines[line].instructions[i + 1]) ? "false" : "true";
 					session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i + 1);
@@ -1279,7 +1281,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
 					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 				{
-					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data)
+					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data
+						|| (session.lines[line].instructions[i + 1].type_of_data == TYPE_OF_DATA::_INT && session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_STRING &&
+							session.lines[line].instructions[i - 1].data.length() == atoi(session.lines[line].instructions[i + 1].data.c_str())))
 					{
 						session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;
@@ -1472,7 +1476,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				if (session.lines[line].instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA
 					&& session.lines[line].instructions[i - 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 				{
-					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data)
+					if (session.lines[line].instructions[i + 1].data == session.lines[line].instructions[i - 1].data
+						|| (session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_INT && session.lines[line].instructions[i + 1].type_of_data == TYPE_OF_DATA::_STRING &&
+							session.lines[line].instructions[i + 1].data.length() == atoi(session.lines[line].instructions[i - 1].data.c_str())))
 					{
 						session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data == TYPE_OF_DATA::_BOOLEAN;

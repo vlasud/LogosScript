@@ -1,3 +1,8 @@
 <#
-	write(find({1,2,3,4,5}, 4))
+	connection = connect("localhost", "test", "root", "")
+
+	result = query(connection, "SELECT * FROM users")
+	write(result[0]["test"])
+
+	close(connection)
 #>

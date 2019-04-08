@@ -13,6 +13,14 @@ enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 
+struct MySQL
+{
+	// Подключение
+	MYSQL *connection;
+	// Инициализация
+	MYSQL mysql_init;	
+};
+
 class Instruction
 {
 private:
@@ -45,6 +53,18 @@ public:
 
 	Instruction() {}
 	Instruction(const std::string body);
+
+	// Перегрузка операторов сравнения объектов
+	const bool operator == (const Instruction &i) const
+	{
+		return this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char 
+			&& this->array == i.array && this->array_map == i.array_map;
+	}
+	const bool operator != (const Instruction &i) const
+	{
+		return !(this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char
+			&& this->array == i.array && this->array_map == i.array_map);
+	}
 };
 
 class LineInstructions
@@ -98,6 +118,9 @@ public:
 	std::map<std::string, Instruction> all_data;
 	// Ассоциативный массив всех данных скрипта (буффер)
 	std::map<std::string, Instruction> all_data_buffer;
+
+	// Вектор активных MySQL соединений
+	std::vector<MySQL*> mysql_connections;
 
 	// Последняя выполненая команда
 	std::string last_command;

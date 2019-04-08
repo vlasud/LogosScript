@@ -7,6 +7,7 @@
 #include <thread>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
+#include <mysql.h>
 #include <vector>
 #include <fstream>
 #include <algorithm>
@@ -17,6 +18,7 @@
 #include "FunctionsCore.h"
 
 #define EMPTY ""
+
 
 // Вектор названий загруженных файлов сайта
 extern std::vector<Page> all_pages;
