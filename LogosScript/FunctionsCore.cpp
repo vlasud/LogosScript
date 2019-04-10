@@ -76,6 +76,16 @@ void write(SystemFunction *object)
 	object->get_session()->output.output_data.push_back(instructions[0].data);
 }
 
+void writeln(SystemFunction *object)
+// Вывод информации в документ с переходом на новую строку в конце
+// 1 параметр
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+
+	object->get_session()->output.output_data.push_back(instructions[0].data + "<br>");
+}
+
 void substr(SystemFunction *object)
 // Обрезает строку
 // 3 параметра
@@ -255,6 +265,61 @@ void split(SystemFunction *object)
 			word = EMPTY;
 		}
 		else word += result.data[i];
+	}
+
+	*res = result;
+}
+
+void down(SystemFunction *object)
+// Переводит все символы строки в нижний регистр
+// 1 параметр
+// [строка]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	if (result.type_of_data != TYPE_OF_DATA::_STRING)
+	{
+		// Синтаксическая ошибка
+		object->get_session()->error = new ErrorCore("function accepts string only", object->get_session());
+		return;
+	}
+
+	for (register u_int i = 0; i < result.data.length(); i++)
+	{
+		if (result.data[i] >= 'A' && result.data[i] <= 'Z')
+			result.data[i] = (char)((int)'a' + ((int)result.data[i] - (int)'A'));
+		else if (result.data[i] >= 'А' && result.data[i] <= 'Я')
+			result.data[i] = (char)((int)'а' + ((int)result.data[i] - (int)'А'));
+	}
+
+	*res = result;
+}
+
+void top(SystemFunction *object)
+// Переводит все символы строки в нижний регистр
+// 1 параметр
+// [строка]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	if (result.type_of_data != TYPE_OF_DATA::_STRING)
+	{
+		// Синтаксическая ошибка
+		object->get_session()->error = new ErrorCore("function accepts string only", object->get_session());
+		return;
+	}
+
+
+	for (register u_int i = 0; i < result.data.length(); i++)
+	{
+		if (result.data[i] >= 'a' && result.data[i] <= 'z')
+			result.data[i] = (char)((int)'A' + ((int)result.data[i] - (int)'a'));
+		else if (result.data[i] >= 'а' && result.data[i] <= 'я')
+			result.data[i] = (char)((int)'А' + ((int)result.data[i] - (int)'я'));
 	}
 
 	*res = result;
@@ -536,75 +601,80 @@ void mysql_query(SystemFunction *object)
 	}
 
 	MYSQL_RES *result_of_query = mysql_store_result(connection->connection);
-
-	/*u_int size = mysql_num_fields(result_of_query);
-	
-
-
-
-	for (register u_int i = 0; i < size; i++)
+	if (result_of_query != NULL)
 	{
-		Instruction inst;
-		inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-		inst.type_of_data = TYPE_OF_DATA::_STRING;
 
-		for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
+		result.array.clear();
+
+		MYSQL_ROW row;
+		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
+		int num_of_index = -1;
+
+		while ((row = mysql_fetch_row(result_of_query)) != NULL)
 		{
-			Instruction new_instruction;
-			new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+			num_of_index = -1;
+			Instruction inst;
+			inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+			inst.type_of_data = TYPE_OF_DATA::_STRING;
 
-			if (fields[i].org_name != NULL)
+			for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
 			{
-				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
-				new_instruction.data = fields[i].;
-			}
-			else
-			{
-				new_instruction.type_of_data = TYPE_OF_DATA::_NONE;
-				new_instruction.data = "null";
-			}
+				Instruction new_instruction;
+				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 
+				if (row[i] != NULL)
+				{
+					new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
+					new_instruction.data = row[i];
 
-			inst.array.push_back(new_instruction);
+					inst.array_map[fields[++num_of_index].name].data = row[i];
+					inst.array_map[fields[num_of_index].name].type_of_data = TYPE_OF_DATA::_STRING;
+				}
+				else
+				{
+					new_instruction.type_of_data = TYPE_OF_DATA::_NONE;
+					new_instruction.data = "null";
+
+					inst.array_map[fields[++num_of_index].name].data = "null";
+					inst.array_map[fields[num_of_index].name].type_of_data = TYPE_OF_DATA::_STRING;
+				}
+
+				inst.array.push_back(new_instruction);
+			}
+			result.array.push_back(inst);
 		}
-		result.array.push_back(inst);
-	}*/
-	result.array.clear();
-	MYSQL_ROW row;
-	MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
-	int num_of_index = -1;
-
-	while ((row = mysql_fetch_row(result_of_query)) != NULL)
-	{
-		num_of_index = -1;
-		Instruction inst;
-		inst.type_of_instruction	= TYPE_OF_INSTRUCTION::DATA;
-		inst.type_of_data			= TYPE_OF_DATA::_STRING;
-
-		for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
-		{
-			Instruction new_instruction;
-			new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-			
-			if (row[i] != NULL)
-			{
-				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
-				new_instruction.data = row[i];
-				new_instruction.array_map[fields[++num_of_index].name].data = row[i];
-			}
-			else
-			{
-				new_instruction.type_of_data = TYPE_OF_DATA::_NONE;
-				new_instruction.data = "null";
-				new_instruction.array_map[fields[++num_of_index].name].data = "null";
-			}
-
-			inst.array.push_back(new_instruction);
-		}
-		result.array.push_back(inst);
 	}
-
 	mysql_free_result(result_of_query);
+
+	*res = result;
+}
+
+void include(SystemFunction *object)
+// Переход на другой документ
+// 1 параметр
+// [id соединения]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+	std::string file_name = result.data;
+
+	int all_pages_size = all_pages.size();
+	register unsigned int i = 0; // -> ID файла в векторе
+
+	for (; i < all_pages_size; i++)
+	{
+		if (all_pages[i].getName() == file_name)
+		{
+			interpreter_start(object->get_session()->get_client_socket(), i, EMPTY, object->get_session());
+			break;
+		}
+		else if (i == all_pages_size - 1)
+		{
+			object->get_session()->error = new ErrorCore("could not find this file", object->get_session());
+			return;
+		}
+	}
 
 	*res = result;
 }

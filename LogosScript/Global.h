@@ -24,7 +24,7 @@
 extern std::vector<Page> all_pages;
 
 
-void interpreter_start(const SOCKET client_socket, const int file_id);
+void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session* _session = nullptr);
 void read_script(Session &session, Page &page_object, const unsigned int start, const unsigned int end);
 void do_script(Session &session);
 void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData = false, FunctionDefinition *func = nullptr, bool isCommand = false);

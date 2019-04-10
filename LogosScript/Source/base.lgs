@@ -1,0 +1,11 @@
+<#
+
+	mysql["host"] 		= "localhost"
+	mysql["database"] 	= "test"
+	mysql["user"] 		= "root"
+	mysql["password"] 	= ""
+
+
+	mysql["connection"][0] = connect(mysql["host"], mysql["database"], mysql["user"], mysql["password"])
+
+#>

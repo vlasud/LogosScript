@@ -22,10 +22,9 @@ void client_handler(const SOCKET client_socket)
 
 	if (res != SOCKET_ERROR)
 	{
-		char* temp = new char[res];
-		for (register unsigned short i = 0; i < res; i++)
-			temp[i] = buffer[i];
-
+		std::string temp(buffer);
+		temp[res] = '\x00';
+		std::cout << temp << std::endl;
 		// Файл, который запросил клиент
 		std::string file_name = "/";
 		bool isFound = false;
@@ -34,7 +33,7 @@ void client_handler(const SOCKET client_socket)
 		{
 			if (temp[i] == '/')
 			{
-				for (register unsigned short j = i + 1; j < res && temp[j] != ' '; j++)
+				for (register unsigned short j = i + 1; j < res && temp[j] != ' ' && temp[j] != '?'; j++)
 					file_name += temp[j];
 				if (file_name != "")
 					isFound = true;
@@ -42,8 +41,7 @@ void client_handler(const SOCKET client_socket)
 			if (isFound)
 				break;
 		}
-		
-		delete[] temp;
+	
 
 		std::string body = "";
 
@@ -82,7 +80,7 @@ void client_handler(const SOCKET client_socket)
 		else
 		{
 			// Передача управления интерпретатору
-			interpreter_start(client_socket, i);
+			interpreter_start(client_socket, i, temp);
 		}
 	}
 }

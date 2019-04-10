@@ -15,9 +15,9 @@ enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 
 struct MySQL
 {
-	// Подключение
+	 //Подключение
 	MYSQL *connection;
-	// Инициализация
+	 //Инициализация
 	MYSQL mysql_init;	
 };
 
@@ -57,13 +57,19 @@ public:
 	// Перегрузка операторов сравнения объектов
 	const bool operator == (const Instruction &i) const
 	{
-		return this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char 
+		if (i.isVariable)
+			return this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char
 			&& this->array == i.array && this->array_map == i.array_map;
+		else
+			return this->data == i.data;
 	}
 	const bool operator != (const Instruction &i) const
 	{
-		return !(this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char
-			&& this->array == i.array && this->array_map == i.array_map);
+		if (i.isVariable)
+			return !(this->data == i.data && this->ptr == i.ptr && this->selected_char == i.selected_char
+				&& this->array == i.array && this->array_map == i.array_map);
+		else
+			return !(this->data == i.data);
 	}
 };
 
@@ -106,9 +112,10 @@ struct FunctionDefinition
 
 class Session
 {
-private:
 	u_int start_line;
 	u_int current_line;
+	std::string file_name;
+	SOCKET client_socket;
 public:
 	std::vector<LineInstructions> lines;
 	// Хэш обьявленных функций
@@ -141,10 +148,13 @@ public:
 	// Текущая выполняемая функция
 	FunctionDefinition *current_function = nullptr;
 
-	Session(u_int start_line);
+	Session(const u_int start_line, const SOCKET client_socket);
 	~Session();
 
 	u_int get_start_line(void);
 	u_int get_current_line(void);
 	void update_current_line(u_int new_line);
+	void set_file_name(const std::string file_name);
+	std::string get_file_name(void);
+	SOCKET get_client_socket(void);
 };

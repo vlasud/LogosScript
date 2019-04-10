@@ -1,8 +1,103 @@
-#include "Global.h"
+п»ї#include "Global.h"
 
-void interpreter_start(const SOCKET client_socket, const int file_id)
-// client_socket - сокет клиента
-// file_id - смещение вектора файлов сайта
+Instruction parse_global_data(const std::string request)
+// РџР°СЂСЃРёРЅРі POST Рё GET РґР°РЅРЅС‹С…
+{
+	Instruction result;
+	result.type_of_data = TYPE_OF_DATA::_STRING;
+	result.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+
+	std::string data = EMPTY;
+	std::string key = EMPTY;
+
+	for (register u_int i = 0; i < request.length() && request[i] != ' '; i++)
+		data += request[i];
+
+	if (data == "GET")
+	{
+		result.body = "_get";
+
+		data = EMPTY;
+		for (register u_int i = 0; i < request.length(); i++)
+		{
+			if (request[i] == '?')
+			{
+				for (register u_int j = i + 1; j < request.length(); j++)
+				{
+					if (request[j] == '=')
+					{
+						key = data;
+						data = EMPTY;
+					}
+					else if (request[j] == '&' || request[j] == ' ')
+					{
+						Instruction tmp;
+						tmp.type_of_data = TYPE_OF_DATA::_STRING;
+						tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+						tmp.data = data;
+
+						result.array_map[key] = tmp;
+
+						key = EMPTY;
+						data = EMPTY;
+						
+						if (request[j] == ' ') break;
+					}
+					else data += request[j];
+				}
+			}
+		}
+	}
+	else if (data == "POST")
+	{
+		result.body = "_post";
+
+		data = EMPTY;
+		for (register u_int i = 0; i < request.length(); i++)
+		{
+			if (request[i] == '\n')
+			{
+				if (data.length() == 1)
+				{
+					data = EMPTY;
+
+					for (register u_int j = i + 1; j < request.length(); j++)
+					{
+						if (request[j] == '=')
+						{
+							key = data;
+							data = EMPTY;
+						}
+						else if (request[j] == '&' || request[j] == '\0')
+						{
+							Instruction tmp;
+							tmp.type_of_data = TYPE_OF_DATA::_STRING;
+							tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+							tmp.data = data;
+
+							result.array_map[key] = tmp;
+
+							key = EMPTY;
+							data = EMPTY;
+
+							if (request[j] == '\0') break;
+						}
+						else data += request[j];
+					}
+					break;
+				}
+
+				data = EMPTY;
+			}
+			else data += request[i];
+		}
+	}
+	return result;
+}
+
+void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session *_session)
+// client_socket - СЃРѕРєРµС‚ РєР»РёРµРЅС‚Р°
+// file_id - СЃРјРµС‰РµРЅРёРµ РІРµРєС‚РѕСЂР° С„Р°Р№Р»РѕРІ СЃР°Р№С‚Р°
 {
 	Page page_object = all_pages[file_id];
 	bool isError = false;
@@ -16,10 +111,23 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 			for (unsigned register int j = i; j < count_lines_of_file; j++)
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
-					Session session(i + 2);
+					Session session(i + 2, client_socket);
+					session.set_file_name(page_object.getName());
+
+					Instruction global_data = parse_global_data(request);
+					session.all_data[global_data.body] = global_data;
+
+					// РљРѕРїРёСЂРѕРІР°РЅРёРµ РІСЃРµС… РґР°РЅРЅС‹С… РµСЃР»Рё Р±С‹Р»Р° РІС‹Р·РІР°РЅР° С„СѓРЅРєС†РёСЏ include
+					if (_session != nullptr)
+					{
+						session.all_data = _session->all_data;
+						session.definition_functions = _session->definition_functions;
+						//session.mysql_connections = _session->mysql_connections;
+					}
+
 					read_script(session, page_object, i + 1, j + 1);
 
-					// Если была синтаксическая ошибка - показать сообщение ошибки
+					// Р•СЃР»Рё Р±С‹Р»Р° СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° - РїРѕРєР°Р·Р°С‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ РѕС€РёР±РєРё
 					if (session.error != nullptr)
 					{
 						page_object.all_lines.clear();
@@ -27,12 +135,22 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 						isError = true;
 						break;
 					}
-					// Иначе заменить исполняемый скрипт на результат работы скрипта
+					// РРЅР°С‡Рµ Р·Р°РјРµРЅРёС‚СЊ РёСЃРїРѕР»РЅСЏРµРјС‹Р№ СЃРєСЂРёРїС‚ РЅР° СЂРµР·СѓР»СЊС‚Р°С‚ СЂР°Р±РѕС‚С‹ СЃРєСЂРёРїС‚Р°
 					else
 					{
+						// РљРѕРїРёСЂРѕРІР°РЅРёРµ РІСЃРµС… РґР°РЅРЅС‹С… РµСЃР»Рё Р±С‹Р»Р° РІС‹Р·РІР°РЅР° С„СѓРЅРєС†РёСЏ include
+						if (_session != nullptr)
+						{
+							_session->all_data = session.all_data;
+							_session->definition_functions = session.definition_functions;
+							_session->output = session.output;
+							//_session->mysql_connections = session.mysql_connections;
+							return;
+						}
+
 						page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
 
-						// Перевернуть вектор
+						// РџРµСЂРµРІРµСЂРЅСѓС‚СЊ РІРµРєС‚РѕСЂ
 						std::reverse(session.output.output_data.begin(), session.output.output_data.end());
 
 						for (register unsigned int mn = 0; mn < session.output.output_data.size(); mn++)
@@ -61,8 +179,8 @@ void interpreter_start(const SOCKET client_socket, const int file_id)
 }
 
 std::string format_data(std::string data)
-// data - данные
-// ~ Переводит данные в правильный формат
+// data - РґР°РЅРЅС‹Рµ
+// ~ РџРµСЂРµРІРѕРґРёС‚ РґР°РЅРЅС‹Рµ РІ РїСЂР°РІРёР»СЊРЅС‹Р№ С„РѕСЂРјР°С‚
 {
 	if (data[0] == '"')
 	{
@@ -71,7 +189,7 @@ std::string format_data(std::string data)
 		return data;
 	}
 	
-	// Перевод в нижний регистр
+	// РџРµСЂРµРІРѕРґ РІ РЅРёР¶РЅРёР№ СЂРµРіРёСЃС‚СЂ
 	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 
 	int counter = 0;
@@ -93,8 +211,8 @@ std::string format_data(std::string data)
 }
 
 TYPE_OF_INSTRUCTION_FOR_PARSER get_type_of_instruction(char ch)
-// ch - символ
-// ~ Определяет тип инструкции
+// ch - СЃРёРјРІРѕР»
+// ~ РћРїСЂРµРґРµР»СЏРµС‚ С‚РёРї РёРЅСЃС‚СЂСѓРєС†РёРё
 {
 	if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' ||
 		ch >= '0' && ch <= '9' || ch == '_' || ch == '"' || ch == '.')
@@ -105,10 +223,10 @@ TYPE_OF_INSTRUCTION_FOR_PARSER get_type_of_instruction(char ch)
 }
 
 TYPE_OF_DATA get_type_of_data(std::string data)
-// data - данные
-// ~ Определяет тип данных
+// data - РґР°РЅРЅС‹Рµ
+// ~ РћРїСЂРµРґРµР»СЏРµС‚ С‚РёРї РґР°РЅРЅС‹С…
 {
-	// Приведение данных к правильному виду
+	// РџСЂРёРІРµРґРµРЅРёРµ РґР°РЅРЅС‹С… Рє РїСЂР°РІРёР»СЊРЅРѕРјСѓ РІРёРґСѓ
 	data = format_data(data);
 
 	if (data[0] == '"') return TYPE_OF_DATA::_STRING;
@@ -119,22 +237,22 @@ TYPE_OF_DATA get_type_of_data(std::string data)
 }
 
 void read_script(Session &session, Page &page_object, const unsigned int start, const unsigned int end)
-// client_socket - сокет клиента
-// start - начало строки
-// end - конец строки
+// client_socket - СЃРѕРєРµС‚ РєР»РёРµРЅС‚Р°
+// start - РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+// end - РєРѕРЅРµС† СЃС‚СЂРѕРєРё
 {
 	unsigned int all_lines_length = 0;
 	std::string word = EMPTY;
 	unsigned int line_counter = 0;
 	TYPE_OF_INSTRUCTION_FOR_PARSER last_type_of_instruction = TYPE_OF_INSTRUCTION_FOR_PARSER::SPACE;
 
-	// Определение команд
+	// РћРїСЂРµРґРµР»РµРЅРёРµ РєРѕРјР°РЅРґ
 	for (unsigned register int i = start; i < end - 1; i++)
 	{
 		all_lines_length = page_object.all_lines[i].length();
 		session.lines.push_back(LineInstructions { } );
 
-		// Подсчет уровня локального пространства
+		// РџРѕРґСЃС‡РµС‚ СѓСЂРѕРІРЅСЏ Р»РѕРєР°Р»СЊРЅРѕРіРѕ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІР°
 		register int space_counter = -1;
 		unsigned register int j = 0;
 
@@ -197,12 +315,12 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 }
 
 void do_script(Session &session)
-// Выполнение скрипта
+// Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р°
 {
-	// Размер массива строк
+	// Р Р°Р·РјРµСЂ РјР°СЃСЃРёРІР° СЃС‚СЂРѕРє
 	unsigned int session_lines_size = session.lines.size();
 
-	// Определение начального уровня локального пространства
+	// РћРїСЂРµРґРµР»РµРЅРёРµ РЅР°С‡Р°Р»СЊРЅРѕРіРѕ СѓСЂРѕРІРЅСЏ Р»РѕРєР°Р»СЊРЅРѕРіРѕ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІР°
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
 		if (session.lines[i].instructions.size() > 0)
@@ -214,23 +332,23 @@ void do_script(Session &session)
 
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
-		// Обновление номера текущей строки в файле
+		// РћР±РЅРѕРІР»РµРЅРёРµ РЅРѕРјРµСЂР° С‚РµРєСѓС‰РµР№ СЃС‚СЂРѕРєРё РІ С„Р°Р№Р»Рµ
 		session.update_current_line(session.get_start_line() + i);
 
 		if (session.lines[i].namespace_level != session.start_level) continue;
 
-		// Сохранение инструкций перед их выполнением
+		// РЎРѕС…СЂР°РЅРµРЅРёРµ РёРЅСЃС‚СЂСѓРєС†РёР№ РїРµСЂРµРґ РёС… РІС‹РїРѕР»РЅРµРЅРёРµРј
 		if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
 
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
-			// Если инструкция - данные
+			// Р•СЃР»Рё РёРЅСЃС‚СЂСѓРєС†РёСЏ - РґР°РЅРЅС‹Рµ
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
-					// Если это функция
+					// Р•СЃР»Рё СЌС‚Рѕ С„СѓРЅРєС†РёСЏ
 					if (j < session.lines[i].instructions.size() - 1 && session.lines[i].instructions[j + 1].body == "(")
 					{
 						if (session.definition_functions.find(session.lines[i].instructions[j].body) != session.definition_functions.end())
@@ -247,7 +365,7 @@ void do_script(Session &session)
 								}
 							}
 
-							// Копирование параметров
+							// РљРѕРїРёСЂРѕРІР°РЅРёРµ РїР°СЂР°РјРµС‚СЂРѕРІ
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 								{
@@ -261,7 +379,7 @@ void do_script(Session &session)
 
 							session.lines[i].instructions[j] = tmp->result;
 							
-							// Удаление лишних инструкций после вызова функций
+							// РЈРґР°Р»РµРЅРёРµ Р»РёС€РЅРёС… РёРЅСЃС‚СЂСѓРєС†РёР№ РїРѕСЃР»Рµ РІС‹Р·РѕРІР° С„СѓРЅРєС†РёР№
 							for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
 								&& session.lines[i].instructions[p].body != ")"; p++)
 							{
@@ -315,21 +433,21 @@ void do_script(Session &session)
 								}
 								else if (b == system_functions.size() - 1)
 								{
-									// Ошибка. Неизвестная функция
+									// РћС€РёР±РєР°. РќРµРёР·РІРµСЃС‚РЅР°СЏ С„СѓРЅРєС†РёСЏ
 									session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", &session);
 									return;
 								}
 							}
 						}
 					}
-					// Иначе если переменная
+					// РРЅР°С‡Рµ РµСЃР»Рё РїРµСЂРµРјРµРЅРЅР°СЏ
 					else
 					{
 						if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 						{
 							session.lines[i].instructions[j].isVariable = true;
 
-							// Если перед переменной стоит модификатор константы
+							// Р•СЃР»Рё РїРµСЂРµРґ РїРµСЂРµРјРµРЅРЅРѕР№ СЃС‚РѕРёС‚ РјРѕРґРёС„РёРєР°С‚РѕСЂ РєРѕРЅСЃС‚Р°РЅС‚С‹
 							if (j > 0 && session.lines[i].instructions[j - 1].body == "const")
 								session.lines[i].instructions[j].isConst = true;
 
@@ -349,22 +467,22 @@ void do_script(Session &session)
 		if (session.lines[i].instructions.size() > 0)
 		{
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
-			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			// Р•СЃР»Рё РїСЂРѕРёР·РѕС€Р»Р° СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° - РїСЂРµРєСЂР°С‚РёС‚СЊ РґР°Р»СЊРЅРµР№С€РµРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕРіСЂР°РјРјС‹
 			if (session.error != nullptr) return;
 			do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1);
-			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			// Р•СЃР»Рё РїСЂРѕРёР·РѕС€Р»Р° СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° - РїСЂРµРєСЂР°С‚РёС‚СЊ РґР°Р»СЊРЅРµР№С€РµРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕРіСЂР°РјРјС‹
 			if (session.error != nullptr) return;
 		}
 	}
 }
 
 void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func, bool isCommand)
-// Выполнение скрипта
+// Р’С‹РїРѕР»РЅРµРЅРёРµ СЃРєСЂРёРїС‚Р°
 {
 
-	// Если происходит выполнение функции, то переместить все данные в буффер
-	// И дальше заносить данные как локальные переменные
-	// После завершения функции вернуть данные из буфера
+	// Р•СЃР»Рё РїСЂРѕРёСЃС…РѕРґРёС‚ РІС‹РїРѕР»РЅРµРЅРёРµ С„СѓРЅРєС†РёРё, С‚Рѕ РїРµСЂРµРјРµСЃС‚РёС‚СЊ РІСЃРµ РґР°РЅРЅС‹Рµ РІ Р±СѓС„С„РµСЂ
+	// Р РґР°Р»СЊС€Рµ Р·Р°РЅРѕСЃРёС‚СЊ РґР°РЅРЅС‹Рµ РєР°Рє Р»РѕРєР°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ
+	// РџРѕСЃР»Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ С„СѓРЅРєС†РёРё РІРµСЂРЅСѓС‚СЊ РґР°РЅРЅС‹Рµ РёР· Р±СѓС„РµСЂР°
 	if (func != nullptr)
 	{
 		session.all_data_buffer = session.all_data;
@@ -372,7 +490,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		
 		session.current_function = func;
 
-		// Внесение параметров в буффер локальных переменных
+		// Р’РЅРµСЃРµРЅРёРµ РїР°СЂР°РјРµС‚СЂРѕРІ РІ Р±СѓС„С„РµСЂ Р»РѕРєР°Р»СЊРЅС‹С… РїРµСЂРµРјРµРЅРЅС‹С…
 		for (register unsigned int i = 0; i < func->parametrs.size(); i++)
 			session.all_data[func->parametrs[i].body] = func->parametrs[i];
 	}
@@ -380,38 +498,38 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
-		// Обновление номера текущей строки в файле
+		// РћР±РЅРѕРІР»РµРЅРёРµ РЅРѕРјРµСЂР° С‚РµРєСѓС‰РµР№ СЃС‚СЂРѕРєРё РІ С„Р°Р№Р»Рµ
 		session.update_current_line(session.get_start_line() + i);
 
-		// Если была вызвана вызвана инструкция continue
+		// Р•СЃР»Рё Р±С‹Р»Р° РІС‹Р·РІР°РЅР° РІС‹Р·РІР°РЅР° РёРЅСЃС‚СЂСѓРєС†РёСЏ continue
 		if (session.isContinue)
 		{
 			session.isContinue = false;
 			return;
 		}
-		// Если была вызвана вызвана инструкция break
+		// Р•СЃР»Рё Р±С‹Р»Р° РІС‹Р·РІР°РЅР° РІС‹Р·РІР°РЅР° РёРЅСЃС‚СЂСѓРєС†РёСЏ break
 		if (session.isContinue) return;
 
 		if (session.lines[i].namespace_level != start_level) continue;
 
-		// Восстановление использованных инструкций
+		// Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРЅС‹С… РёРЅСЃС‚СЂСѓРєС†РёР№
 		if ((func != nullptr || isCommand) && session.lines[i].copy_instructions.size() != 0 
 			&& session.lines[i].copy_instructions.size() != session.lines[i].instructions.size())
 			session.lines[i].instructions = session.lines[i].copy_instructions;
 
-		// Сохранение инструкций перед их выполнением
+		// РЎРѕС…СЂР°РЅРµРЅРёРµ РёРЅСЃС‚СЂСѓРєС†РёР№ РїРµСЂРµРґ РёС… РІС‹РїРѕР»РЅРµРЅРёРµРј
 		if (session.lines[i].copy_instructions.size() == 0) session.lines[i].copy_instructions = session.lines[i].instructions;
 
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
 
-			// Если инструкция - данные
+			// Р•СЃР»Рё РёРЅСЃС‚СЂСѓРєС†РёСЏ - РґР°РЅРЅС‹Рµ
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
 				if (!(session.lines[i].instructions[j].body[0] >= '0' && session.lines[i].instructions[j].body[0] <= '9' ||
 					session.lines[i].instructions[j].body[0] == '"' || std::find(KEY_WORDS.begin(), KEY_WORDS.end(), session.lines[i].instructions[j].body) != KEY_WORDS.end()))
 				{
-					// Если это функция
+					// Р•СЃР»Рё СЌС‚Рѕ С„СѓРЅРєС†РёСЏ
 					if (j < session.lines[i].instructions.size() - 1 && session.lines[i].instructions[j + 1].body == "(")
 					{
 						if (session.definition_functions.find(session.lines[i].instructions[j].body) != session.definition_functions.end())
@@ -427,7 +545,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 									break;
 								}
 							}
-							// Копирование параметров
+							// РљРѕРїРёСЂРѕРІР°РЅРёРµ РїР°СЂР°РјРµС‚СЂРѕРІ
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 								{
@@ -441,7 +559,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 
 							session.lines[i].instructions[j] = tmp->result;
 
-							// Удаление лишних инструкций после вызова функций
+							// РЈРґР°Р»РµРЅРёРµ Р»РёС€РЅРёС… РёРЅСЃС‚СЂСѓРєС†РёР№ РїРѕСЃР»Рµ РІС‹Р·РѕРІР° С„СѓРЅРєС†РёР№
 							for (register unsigned p = j + 1; p < session.lines[i].instructions.size()
 								&& session.lines[i].instructions[p].body != ")"; p++)
 							{
@@ -497,28 +615,28 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 								}
 								else if (b == system_functions.size() - 1)
 								{
-									// Ошибка. Неизвестная функция
+									// РћС€РёР±РєР°. РќРµРёР·РІРµСЃС‚РЅР°СЏ С„СѓРЅРєС†РёСЏ
 									session.error = new ErrorCore("unknow function {" + session.lines[i].instructions[j].body + "} ", &session);
 									return;
 								}
 							}
 						}
 					}
-					// Иначе если переменная
+					// РРЅР°С‡Рµ РµСЃР»Рё РїРµСЂРµРјРµРЅРЅР°СЏ
 					else if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
 					{
-						// Если переменная не нашлась в локальной видимости, то ищем ее в глобальной
+						// Р•СЃР»Рё РїРµСЂРµРјРµРЅРЅР°СЏ РЅРµ РЅР°С€Р»Р°СЃСЊ РІ Р»РѕРєР°Р»СЊРЅРѕР№ РІРёРґРёРјРѕСЃС‚Рё, С‚Рѕ РёС‰РµРј РµРµ РІ РіР»РѕР±Р°Р»СЊРЅРѕР№
 						if (j > 0 && session.lines[i].instructions[j - 1].body == "global" && session.all_data_buffer.find(session.lines[i].instructions[j].body) != session.all_data_buffer.end())
 						{
 							session.all_data[session.all_data_buffer.find(session.lines[i].instructions[j].body)->second.body] = session.all_data_buffer.find(session.lines[i].instructions[j].body)->second;
 							session.all_data[session.all_data_buffer.find(session.lines[i].instructions[j].body)->second.body].isUsedHasGlobal = true;
 						}
-						// Иначе если переменной с таким именем вовсе не существует
+						// РРЅР°С‡Рµ РµСЃР»Рё РїРµСЂРµРјРµРЅРЅРѕР№ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј РІРѕРІСЃРµ РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
 						else
 						{
 							session.lines[i].instructions[j].isVariable = true;
 
-							// Если перед переменной стоит модификатор константы
+							// Р•СЃР»Рё РїРµСЂРµРґ РїРµСЂРµРјРµРЅРЅРѕР№ СЃС‚РѕРёС‚ РјРѕРґРёС„РёРєР°С‚РѕСЂ РєРѕРЅСЃС‚Р°РЅС‚С‹
 							if (j > 0 && session.lines[i].instructions[j - 1].body == "const")
 								session.lines[i].instructions[j].isConst = true;
 
@@ -537,11 +655,11 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		if (session.lines[i].instructions.size() > 0)
 		{
 			do_line_script_operators(session, i, 0, session.lines[i].instructions.size() - 1);
-			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			// Р•СЃР»Рё РїСЂРѕРёР·РѕС€Р»Р° СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° - РїСЂРµРєСЂР°С‚РёС‚СЊ РґР°Р»СЊРЅРµР№С€РµРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕРіСЂР°РјРјС‹
 			if (session.error != nullptr) return;
 
 			if (!isOnlyData && do_line_script_commands(session, i, 0, session.lines[i].instructions.size() - 1));
-			// Если произошла синтаксическая ошибка - прекратить дальнейшее выполнение программы
+			// Р•СЃР»Рё РїСЂРѕРёР·РѕС€Р»Р° СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° - РїСЂРµРєСЂР°С‚РёС‚СЊ РґР°Р»СЊРЅРµР№С€РµРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕРіСЂР°РјРјС‹
 			if (session.error != nullptr) return;
 
 			if (func != nullptr && func->isReturn)
@@ -553,7 +671,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 	if (func != nullptr)
 	{
-		// Обновить данные с модификатором global
+		// РћР±РЅРѕРІРёС‚СЊ РґР°РЅРЅС‹Рµ СЃ РјРѕРґРёС„РёРєР°С‚РѕСЂРѕРј global
 		for (auto b = session.all_data.begin(); b != session.all_data.end(); b++)
 			if (b->second.isUsedHasGlobal)
 			{
@@ -566,9 +684,10 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 }
 
-Session::Session(u_int start_line)
+Session::Session(const u_int start_line, const SOCKET client_socket)
 {
 	this->start_line = start_line;
+	this->client_socket = client_socket;
 }
 
 Session::~Session()
@@ -588,6 +707,20 @@ u_int Session::get_current_line(void)
 void Session::update_current_line(u_int new_line)
 {
 	this->current_line = new_line;
+}
+
+void Session::set_file_name(const std::string file_name)
+{
+	this->file_name = file_name;
+}
+std::string Session::get_file_name(void)
+{
+	return this->file_name;
+}
+
+SOCKET Session::get_client_socket(void)
+{
+	return this->client_socket;
 }
 
 Instruction::Instruction(const std::string body)

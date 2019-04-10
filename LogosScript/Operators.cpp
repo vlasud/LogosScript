@@ -1,153 +1,141 @@
-#include "Global.h"
+п»ї#include "Global.h"
 
 void do_line_script_operators(Session& session, const unsigned int line, const unsigned int begin, unsigned int end)
-// Выполнение часть инструкций в строке. Работа с операторами
+// Р’С‹РїРѕР»РЅРµРЅРёРµ С‡Р°СЃС‚СЊ РёРЅСЃС‚СЂСѓРєС†РёР№ РІ СЃС‚СЂРѕРєРµ. Р Р°Р±РѕС‚Р° СЃ РѕРїРµСЂР°С‚РѕСЂР°РјРё
 {
-	// Парсинг фигурных скобочек (для массива)
+	// РџР°СЂСЃРёРЅРі С„РёРіСѓСЂРЅС‹С… СЃРєРѕР±РѕС‡РµРє (РґР»СЏ РјР°СЃСЃРёРІР°)
 	end -= parse_array_brackets(session, line, begin, end);
+
+	// РџРѕСЃР»РµРґРЅРёР№ СЌР»РµРјРµРЅС‚ РІ РјР°СЃСЃРёРІРµ
+	void* last_ptr = nullptr;
 
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i >= session.lines[line].instructions.size()) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
-			Instruction &temp = session.lines[line].instructions[i];
+			Instruction &tmp = session.lines[line].instructions[i];
 
-			if (temp.body == "]")
+			if (tmp.body == "[")
 			{
-				for (register unsigned int f = i - 1; f >= begin; f--)
+				Instruction *parent = &session.lines[line].instructions[i - 1];
+				parent->ptr = nullptr;
+
+				for (register unsigned int f = i + 1; f <= end; f++)
 				{
-					if (session.lines[line].instructions[f].body == "[")
+					if (session.lines[line].instructions[f].body == "]")
 					{
-						// Выполнить операции внутри скобочек
-						do_line_script_operators(session, line, f + 1, i - 1);
+						// Р’С‹РїРѕР»РЅРёС‚СЊ РѕРїРµСЂР°С†РёРё РІРЅСѓС‚СЂРё СЃРєРѕР±РѕС‡РµРє
+						do_line_script_operators(session, line, i + 1, f - 1);
 
-						Instruction * first_node	= &session.lines[line].instructions[f - 1];
-						Instruction * temp			= &session.lines[line].instructions[f - 1];
-						temp->ptr					= nullptr;
+						Instruction *temp = (last_ptr == nullptr) ? &session.lines[line].instructions[i - 1] : (Instruction*)last_ptr;
 
-						for (register unsigned int s = f + 1; s < i; s++)
+						u_int s = i + 1;
+
+						if (session.lines[line].instructions[s].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 						{
-							if (s >= session.lines[line].instructions.size()) // <------ Костыль
+							// Р•СЃР»Рё СЃРјРµС‰РµРЅРёРµ - РїРѕ С‡РёСЃР»Сѓ
+							if (session.lines[line].instructions[s].type_of_data == TYPE_OF_DATA::_INT)
 							{
-								i = session.lines[line].instructions.size() - 1;
-								break;
-							}
+								// РЎРјРµС‰РµРЅРёРµ
+								size_t bias = atoi(session.lines[line].instructions[s].data.c_str());
 
-							if (session.lines[line].instructions[s].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
-							{
-								if (temp->ptr != nullptr)
-									temp = temp->ptr;
-
-								// Если смещение - по числу
-								if (session.lines[line].instructions[s].type_of_data == TYPE_OF_DATA::_INT)
+								// Р•СЃР»Рё С‡РёСЃР»Рѕ РІС‹С…РѕРґРёС‚ Р·Р° РїСЂРµРґРµР»С‹ РјР°СЃСЃРёРІР°
+								if (bias >= temp->array.size())
 								{
-									// Смещение
-									size_t bias = atoi(session.lines[line].instructions[s].data.c_str());
-
-									// Если число выходит за пределы массива
-									if (bias >= temp->array.size())
+									// Р•СЃР»Рё РґР°РЅРЅС‹Рµ - СЃС‚СЂРѕРєР° Рё РјР°СЃСЃРёРІ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚
+									if (temp->type_of_data == TYPE_OF_DATA::_STRING && temp->array.size() == 0)
 									{
-										// Если данные - строка и массив отсутствует
-										if (temp->type_of_data == TYPE_OF_DATA::_STRING && temp->array.size() == 0)
+										// Р•СЃР»Рё СЃРјРµС‰РµРЅРёРµ РІС…РѕРґРёС‚ РІ СЂР°РјРєРё СЂР°Р·РјРµСЂР° СЃС‚СЂРѕРєРё
+										if (bias < temp->data.length())
 										{
-											// Если смещение входит в рамки размера строки
-											if (bias < temp->data.length())
-											{
-												temp->data = temp->data[bias];
-												temp->selected_char = bias;
-											}
-											// Иначе если выходит за пределы массива строки
-											else
-											{
-												// Синтаксическая ошибка...
-												session.error = new ErrorCore("out of bounds array", &session);
-												return;
-											}
+											temp->data = temp->data[bias];
+											temp->selected_char = bias;
 										}
-										// Иначе если массив существует
+										// РРЅР°С‡Рµ РµСЃР»Рё РІС‹С…РѕРґРёС‚ Р·Р° РїСЂРµРґРµР»С‹ РјР°СЃСЃРёРІР° СЃС‚СЂРѕРєРё
 										else
 										{
-											// Новая пустая инструкция
-											Instruction new_null_instruction;
-											new_null_instruction.data = "null";
-											new_null_instruction.type_of_data = TYPE_OF_DATA::_NONE;
-											new_null_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-
-											// Заполнение массива новыми инструкциями
-											for (register unsigned counter = temp->array.size(); counter <= bias; counter++)
-												temp->array.push_back(new_null_instruction);
-
-											// Установка указателя на последний элемент массива
-											temp->why_array_is_used = true;
-											temp->ptr = &temp->array[temp->array.size() - 1];
-											temp->data = "null";
-											temp->type_of_data = TYPE_OF_DATA::_NONE;
+											// РЎРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°...
+											session.error = new ErrorCore("out of bounds array", &session);
+											return;
 										}
 									}
-									// Иначе если массив существует и смещение входит в рамки его размера
+									// РРЅР°С‡Рµ РµСЃР»Рё РјР°СЃСЃРёРІ СЃСѓС‰РµСЃС‚РІСѓРµС‚
 									else
 									{
-										temp->why_array_is_used = true;
-										temp->ptr = &temp->array[bias];
-										temp->data = temp->array[bias].data;
-										temp->type_of_data = temp->array[bias].type_of_data;
-									}
-								}
-								// Если смещение по строке
-								else if (session.lines[line].instructions[s].type_of_data == TYPE_OF_DATA::_STRING)
-								{
-									std::string & bias = session.lines[line].instructions[s].data;
-
-									// Если индекс с таким ключем не существует
-									if (temp->array_map.find(bias) == temp->array_map.end())
-									{
+										// РќРѕРІР°СЏ РїСѓСЃС‚Р°СЏ РёРЅСЃС‚СЂСѓРєС†РёСЏ
 										Instruction new_null_instruction;
 										new_null_instruction.data = "null";
+										new_null_instruction.ptr = nullptr;
 										new_null_instruction.type_of_data = TYPE_OF_DATA::_NONE;
 										new_null_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+										parent->data = "null";
+										parent->type_of_data = TYPE_OF_DATA::_NONE;
 
-										temp->array_map[bias] = new_null_instruction;
+										// Р—Р°РїРѕР»РЅРµРЅРёРµ РјР°СЃСЃРёРІР° РЅРѕРІС‹РјРё РёРЅСЃС‚СЂСѓРєС†РёСЏРјРё
+										for (register unsigned counter = temp->array.size(); counter <= bias; counter++)
+											temp->array.push_back(new_null_instruction);
+
+										// РЈСЃС‚Р°РЅРѕРІРєР° СѓРєР°Р·Р°С‚РµР»СЏ РЅР° РїРѕСЃР»РµРґРЅРёР№ СЌР»РµРјРµРЅС‚ РјР°СЃСЃРёРІР°
+										parent->ptr = &temp->array[temp->array.size() - 1];
 									}
-
-									temp->why_array_is_used = false;
-									temp->ptr = &temp->array_map[bias];
-									temp->data = temp->array_map[bias].data;
-									temp->type_of_data = temp->array_map[bias].type_of_data;
 								}
+								// РРЅР°С‡Рµ РµСЃР»Рё РјР°СЃСЃРёРІ СЃСѓС‰РµСЃС‚РІСѓРµС‚ Рё СЃРјРµС‰РµРЅРёРµ РІС…РѕРґРёС‚ РІ СЂР°РјРєРё РµРіРѕ СЂР°Р·РјРµСЂР°
+								else
+								{
+									parent->ptr = &temp->array[bias];
+									parent->data = temp->array[bias].data;
+									parent->type_of_data = temp->array[bias].type_of_data;
+								}
+							}
+							// Р•СЃР»Рё СЃРјРµС‰РµРЅРёРµ РїРѕ СЃС‚СЂРѕРєРµ
+							else if (session.lines[line].instructions[s].type_of_data == TYPE_OF_DATA::_STRING)
+							{
+								std::string & bias = session.lines[line].instructions[s].data;
+
+								// Р•СЃР»Рё РёРЅРґРµРєСЃ СЃ С‚Р°РєРёРј РєР»СЋС‡РµРј РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
+								if (temp->array_map.find(bias) == temp->array_map.end())
+								{
+									Instruction new_null_instruction;
+									new_null_instruction.data = "null";
+									new_null_instruction.ptr = nullptr;
+									new_null_instruction.type_of_data = TYPE_OF_DATA::_NONE;
+									new_null_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+
+									temp->array_map[bias] = new_null_instruction;
+								}
+
+								parent->data = temp->array_map[bias].data;
+								parent->type_of_data = temp->array_map[bias].type_of_data;
+								parent->ptr = &temp->array_map[bias];
 							}
 						}
 
-						if (first_node != temp)
-						{
-							first_node->why_array_is_used = temp->why_array_is_used;
-							first_node->data = temp->data;
-							first_node->type_of_data = temp->type_of_data;
-						}
+						last_ptr = parent->ptr;
 
-						// Удаление использованных инструкций
-						bool flag = true;
+						// РЈРґР°Р»РµРЅРёРµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРЅС‹С… РёРЅСЃС‚СЂСѓРєС†РёР№
+						std::string last_cmd_body;
 						do
 						{
-							if (session.lines[line].instructions[f].body == "]") flag = false;
-
-							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + f);
+							last_cmd_body = session.lines[line].instructions[i].body;
+							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 							end--;
-							i--;
-						} while ((session.lines[line].instructions[f].body != "]" || flag) && f < session.lines[line].instructions.size());
+						} while ((last_cmd_body != "]") && f < session.lines[line].instructions.size());
+						i--;
 						break;
 					}
 				}
 			}
+			else last_ptr = nullptr;
 		}
 	}
 
-	// Операторы первого уровня [(, ), ++, --, -]
+	// РћРїРµСЂР°С‚РѕСЂС‹ РїРµСЂРІРѕРіРѕ СѓСЂРѕРІРЅСЏ [(, ), ++, --, -]
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
-		if (i < 0 || i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i < 0 || i >= session.lines[line].instructions.size()) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -279,7 +267,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					if (session.lines[line].instructions[i + 1].isConst)
 					{
-						// Ошибка. Константу нельзя изменять
+						// РћС€РёР±РєР°. РљРѕРЅСЃС‚Р°РЅС‚Сѓ РЅРµР»СЊР·СЏ РёР·РјРµРЅСЏС‚СЊ
 						session.error = new ErrorCore("constant not subject to change", &session);
 						return;
 					}
@@ -318,7 +306,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 
 					for (register int z = end; z >= begin; z--)
 					{
-						if (z < 0) break; // <------ Костыль
+						if (z < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 						if (session.lines[line].instructions[i + 1].body == session.lines[line].instructions[z].body)
 							session.lines[line].instructions[z].data = session.lines[line].instructions[i + 1].data;
@@ -332,7 +320,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					if (session.lines[line].instructions[i - 1].isConst)
 					{
-						// Ошибка. Константу нельзя изменять
+						// РћС€РёР±РєР°. РљРѕРЅСЃС‚Р°РЅС‚Сѓ РЅРµР»СЊР·СЏ РёР·РјРµРЅСЏС‚СЊ
 						session.error = new ErrorCore("constant not subject to change", &session);
 						return;
 					}
@@ -376,7 +364,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					if (session.lines[line].instructions[i + 1].isConst)
 					{
-						// Ошибка. Константу нельзя изменять
+						// РћС€РёР±РєР°. РљРѕРЅСЃС‚Р°РЅС‚Сѓ РЅРµР»СЊР·СЏ РёР·РјРµРЅСЏС‚СЊ
 						session.error = new ErrorCore("constant not subject to change", &session);
 						return;
 					}
@@ -414,7 +402,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 
 					for (register int z = end; z >= begin; z--)
 					{
-						if (z < 0) break; // <------ Костыль
+						if (z < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 						if (session.lines[line].instructions[i + 1].body == session.lines[line].instructions[z].body)
 							session.lines[line].instructions[z].data = session.lines[line].instructions[i + 1].data;
@@ -427,7 +415,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 					if (session.lines[line].instructions[i - 1].isConst)
 					{
-						// Ошибка. Константу нельзя изменять
+						// РћС€РёР±РєР°. РљРѕРЅСЃС‚Р°РЅС‚Сѓ РЅРµР»СЊР·СЏ РёР·РјРµРЅСЏС‚СЊ
 						session.error = new ErrorCore("constant not subject to change", &session);
 						return;
 					}
@@ -468,10 +456,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 		}
 	}
 
-	// Операторы второго уровня [*, /]
+	// РћРїРµСЂР°С‚РѕСЂС‹ РІС‚РѕСЂРѕРіРѕ СѓСЂРѕРІРЅСЏ [*, /]
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i < 0 || i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i < 0 || i >= session.lines[line].instructions.size()) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -658,7 +646,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -833,7 +821,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -843,10 +831,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	}
 
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
-	// Операторы третьего уровня [+, -, ==]
+	// РћРїРµСЂР°С‚РѕСЂС‹ С‚СЂРµС‚СЊРµРіРѕ СѓСЂРѕРІРЅСЏ [+, -, ==]
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i < 0) break; // <------ Костыль
+		if (i < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -1022,7 +1010,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -1237,12 +1225,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			else continue;
 		}
 	}
-	// Сюда
-	// Операторы нулевого уровня [=]
+	// РЎСЋРґР°
+	// РћРїРµСЂР°С‚РѕСЂС‹ РЅСѓР»РµРІРѕРіРѕ СѓСЂРѕРІРЅСЏ [=]
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
-		if (i < 0) break; // <------ Костыль
+		if (i < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -1459,7 +1447,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].data = "true";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -1602,7 +1590,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "true";
+							session.lines[line].instructions[i - 1].data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 							break;
 						}
@@ -1834,7 +1822,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "true";
+						if(session.lines[line].instructions[i + 1].data == "null")
+							session.lines[line].instructions[i - 1].data = "true";
+						else 
+							session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -2014,10 +2005,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if(session.lines[line].instructions[i + 1].data == "null") 
-							session.lines[line].instructions[i - 1].data = "true";
-						else 
-							session.lines[line].instructions[i - 1].data = "false";
+						session.lines[line].instructions[i - 1].data = "true";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -2036,7 +2024,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
-		if (i < 0) break; // <------ Костыль
+		if (i < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -2064,7 +2052,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
-		if (i < 0) break; // <------ Костыль
+		if (i < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -2093,17 +2081,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)
 	{
-		if (i < 0) break; // <------ Костыль
+		if (i < 0) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
-			if (session.lines[line].instructions[i - 1].isConst && session.lines[line].instructions[i - 1].type_of_data != TYPE_OF_DATA::_NONE)
-			{
-				// Ошибка. Константу нельзя изменять
-				session.error = new ErrorCore("constant not subject to change", &session);
-				return;
-			}
-
 			Instruction temp = session.lines[line].instructions[i];
 
 			if (temp.body == "=")
@@ -2117,7 +2098,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -2333,7 +2314,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -2755,7 +2736,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -2967,7 +2948,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				else
 				{
-					// ... синтаксическая ошибка
+					// ... СЃРёРЅС‚Р°РєСЃРёС‡РµСЃРєР°СЏ РѕС€РёР±РєР°
 					session.error = new ErrorCore("data should be left of the operator", &session);
 					return;
 				}
@@ -2977,12 +2958,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 }
 
 int parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int end)
-// Парсинг фигурных собочек
+// РџР°СЂСЃРёРЅРі С„РёРіСѓСЂРЅС‹С… СЃРѕР±РѕС‡РµРє
 {
 	int sub = 0;
 	for (register int i = begin; i <= end; i++)
 	{
-		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
+		if (i >= session.lines[line].instructions.size()) break; // <------ РљРѕСЃС‚С‹Р»СЊ
 
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
@@ -3039,11 +3020,18 @@ int parse_array_brackets(Session &session, const unsigned int line, const unsign
 }
 
 void write_data_from_local_to_global(Session &session, Instruction &first, Instruction &second)
-// Запись данных из кэша в глабольную переменную
+// Р—Р°РїРёСЃСЊ РґР°РЅРЅС‹С… РёР· РєСЌС€Р° РІ РіР»Р°Р±РѕР»СЊРЅСѓСЋ РїРµСЂРµРјРµРЅРЅСѓСЋ
 {
+	if (first.isConst && first.type_of_data != TYPE_OF_DATA::_NONE)
+	{
+		// РћС€РёР±РєР°. РљРѕРЅСЃС‚Р°РЅС‚Сѓ РЅРµР»СЊР·СЏ РёР·РјРµРЅСЏС‚СЊ
+		session.error = new ErrorCore("constant not subject to change", &session);
+		return;
+	}
+
 	if (first.selected_char > -1)
 		session.all_data.find(first.body)->second.data[first.selected_char] = second.data[0];
-	// Если это не массив
+	// Р•СЃР»Рё СЌС‚Рѕ РЅРµ РјР°СЃСЃРёРІ
 	else if (first.ptr == nullptr)
 	{
 		session.all_data.find(first.body)->second.data = second.data;

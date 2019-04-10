@@ -25,6 +25,8 @@ public:
 
 // Вывод информации в документ
 void write(SystemFunction *object);
+// Вывод информации в документ с переходом на новую строку в конце
+void writeln(SystemFunction *object);
 // Длина строки или масива
 void len(SystemFunction *object);
 // Обрезать строку
@@ -37,8 +39,12 @@ void add(SystemFunction *object);
 void insert(SystemFunction *object);
 // Заменить в массиве/строке
 void replace(SystemFunction *object);
-// Разбить строку на массив
+// Заменить в массиве/строке
 void split(SystemFunction *object);
+// Перевести все символы строки в нижний регистр
+void down(SystemFunction *object);
+// Перевести все символы строки в верхний
+void top(SystemFunction *object);
 // Возвращает индекс первого вхождения объекта
 void find(SystemFunction *object);
 // Преобразовать к типу int
@@ -51,23 +57,28 @@ void __bool(SystemFunction *object);
 void __str(SystemFunction *object);
 // Получить тип данных объекта
 void typeof(SystemFunction *object);
-// Установить связь с базой данных
+ //Установить связь с базой данных
 void mysql_connect(SystemFunction *object);
-// Прерывает связь с базой данных
+ //Прерывает связь с базой данных
 void mysql_close(SystemFunction *object);
-// Посылает запрос к базе данных
+ //Посылает запрос к базе данных
 void mysql_query(SystemFunction *object);
+//Переход на другой документ
+void include(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
 {
 	SystemFunction {"write", 1, write},
+	SystemFunction {"writeln", 1, writeln},
 	SystemFunction {"len", 1, len},
 	SystemFunction {"substr", 3, substr},
 	SystemFunction {"removeAt", 2, removeAt},
 	SystemFunction {"add", 2, add},
 	SystemFunction {"insert", 3, insert},
 	SystemFunction {"replace", 3, replace},
+	SystemFunction {"down", 1, down},
+	SystemFunction {"top", 1, top},
 	SystemFunction {"split", 2, split},
 	SystemFunction {"find", 2, find},
 	SystemFunction {"int", 1, __int},
@@ -78,4 +89,5 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"connect", 4, mysql_connect},
 	SystemFunction {"close", 1, mysql_close},
 	SystemFunction {"query", 2, mysql_query},
+	SystemFunction {"include", 1, include},
 };

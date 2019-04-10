@@ -1,8 +1,17 @@
+<form method = "POST">
+	<input type = "text" name = "login">
+	<input type = "text" name = "password">
+	<input type = "submit" name = "button">
+</form>
+
+
 <#
+
 	connection = connect("localhost", "test", "root", "")
 
-	result = query(connection, "SELECT * FROM users")
-	write(result[0]["test"])
+	query(connection, "INSERT INTO users (name, age) VALUES ('" + _post["login"] + "', '" + _post["password"] + "')")
+	
 
 	close(connection)
+	
 #>
