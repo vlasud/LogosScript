@@ -2,7 +2,7 @@
 // Массив операторов
 const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return", "global", "continue", "break", "const"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return", "global", "continue", "break", "const", "static"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 
@@ -12,14 +12,14 @@ enum TYPE_OF_INSTRUCTION { DATA, OPERATOR, COMMAND, TAB};
 enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
-
-struct MySQL
-{
-	 //Подключение
-	MYSQL *connection;
-	 //Инициализация
-	MYSQL mysql_init;	
-};
+//
+//struct MySQL
+//{
+//	 //Подключение
+//	MYSQL *connection;
+//	 //Инициализация
+//	MYSQL mysql_init;	
+//};
 
 class Instruction
 {
@@ -50,6 +50,8 @@ public:
 	bool isUsedHasGlobal = false;
 	// Если это константа
 	bool isConst = false;
+	// Если статическая переменная
+	bool isStatic = false;
 
 	Instruction() {}
 	Instruction(const std::string body);
@@ -127,7 +129,7 @@ public:
 	std::map<std::string, Instruction> all_data_buffer;
 
 	// Вектор активных MySQL соединений
-	std::vector<MySQL*> mysql_connections;
+	//std::vector<MySQL*> mysql_connections;
 
 	// Последняя выполненая команда
 	std::string last_command;
@@ -138,6 +140,8 @@ public:
 	bool isContinue = false;
 	// Была ли вызвана команда break
 	bool isBreak = false;
+	// Была ли вызвана команда удаления сессии
+	bool isSessionDelete = false;
 
 	ErrorCore *error = nullptr;
 	Output output;
@@ -148,6 +152,7 @@ public:
 	// Текущая выполняемая функция
 	FunctionDefinition *current_function = nullptr;
 
+	Session(void);
 	Session(const u_int start_line, const SOCKET client_socket);
 	~Session();
 

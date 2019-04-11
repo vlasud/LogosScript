@@ -8,8 +8,10 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 std::vector<Page> all_pages;
+std::map<std::string, Instruction> static_data;
+std::map<std::string, Session> all_user_sessions;
 
-const std::string ip = "127.0.0.1";
+const std::string ip = "192.168.1.59";
 const char* port = "2020";
 
 void client_handler(const SOCKET client_socket)
@@ -23,7 +25,7 @@ void client_handler(const SOCKET client_socket)
 	if (res != SOCKET_ERROR)
 	{
 		std::string temp(buffer);
-		temp[res] = '\x00';
+		temp[res] = '\0';
 		std::cout << temp << std::endl;
 		// Файл, который запросил клиент
 		std::string file_name = "/";
@@ -224,7 +226,10 @@ int main(int argc, char **argv[])
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	while (true)
 	{
-		SOCKET client_socket = accept(server_socket, NULL, NULL);
+		struct sockaddr clientaddress;
+		int size = sizeof(clientaddress);
+
+		SOCKET client_socket = accept(server_socket, &clientaddress, &size);
 		if (client_socket != INVALID_SOCKET)
 		{
 			// Запуск потока обработки клиентского запроса

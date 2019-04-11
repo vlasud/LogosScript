@@ -68,7 +68,7 @@ Instruction parse_global_data(const std::string request)
 							key = data;
 							data = EMPTY;
 						}
-						else if (request[j] == '&' || request[j] == '\0')
+						else if (request[j] == '&' || request[j] == '\0' || j == request.length() - 1)
 						{
 							Instruction tmp;
 							tmp.type_of_data = TYPE_OF_DATA::_STRING;
@@ -95,12 +95,76 @@ Instruction parse_global_data(const std::string request)
 	return result;
 }
 
+std::string get_session_id(std::string request)
+{
+	std::string result = EMPTY;
+	std::string key = EMPTY;
+
+	for (register u_int i = 0; i < request.length(); i++)
+	{
+		if (request[i] == '\n')
+			result = EMPTY;
+		else
+		{
+			if (request[i] == ':')
+			{
+				if (result == "Cookie")
+				{
+					result = EMPTY;
+					for (register u_int j = i + 1; j < request.length(); j++)
+					{
+						if (request[j] == ' ') continue;
+
+						if (request[j] == '=')
+						{
+							key = result;
+							result = EMPTY;
+						}
+						else if (j == request.length() - 1 || request[j] == '\n' || request[j] == ';' || request[j] == '\r')
+						{
+							if (key == "SESSION")
+							{
+								return result;
+							}
+							result = EMPTY;
+						}
+						else result += request[j];
+					}
+				}
+			}
+			else result += request[i];
+		}
+	}
+	result = EMPTY;
+	return result;
+}
+
+std::string generate_session_key(void)
+{
+	std::srand(time(0));
+	std::string key = EMPTY;
+
+	do
+	{
+		key = EMPTY;
+
+		for (register u_int i = 0; i < 20; i++)
+			key += (1 + rand() % 9) + 48;
+
+	} while (all_user_sessions.find(key) != all_user_sessions.end());
+
+	return key;
+}
+
 void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session *_session)
 // client_socket - сокет клиента
 // file_id - смещение вектора файлов сайта
 {
 	Page page_object = all_pages[file_id];
 	bool isError = false;
+
+	// Получение идентификатора сессии
+	std::string session_key = get_session_id(request);
 
 	unsigned int count_lines_of_file = all_pages[file_id].all_lines.size();
 
@@ -112,20 +176,42 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
 					Session session(i + 2, client_socket);
+					if (session_key != EMPTY)
+					{
+						if (all_user_sessions.find(session_key) != all_user_sessions.end())
+						{
+							session.all_data = all_user_sessions[session_key].all_data;
+							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
+						}
+						else all_user_sessions[session_key] = session;
+					}
+					else
+					{
+						session_key = generate_session_key();
+					}
 					session.set_file_name(page_object.getName());
 
 					Instruction global_data = parse_global_data(request);
 					session.all_data[global_data.body] = global_data;
 
+					if (static_data.size() > 0)
+						session.all_data.insert(static_data.begin(), static_data.end());
+
 					// Копирование всех данных если была вызвана функция include
 					if (_session != nullptr)
 					{
-						session.all_data = _session->all_data;
+						session.all_data.insert(_session->all_data.begin(), _session->all_data.end());
 						session.definition_functions = _session->definition_functions;
 						//session.mysql_connections = _session->mysql_connections;
 					}
 
 					read_script(session, page_object, i + 1, j + 1);
+
+					if (!session.isSessionDelete)
+						all_user_sessions[session_key] = session;
+					// Если была команда удаления текущей сессии
+					else if(all_user_sessions.find(session_key) != all_user_sessions.end())
+						all_user_sessions.erase(session_key);
 
 					// Если была синтаксическая ошибка - показать сообщение ошибки
 					if (session.error != nullptr)
@@ -171,7 +257,9 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 	for (unsigned register int i = 0; i < count_line_of_page; i++)
 		body += page_object.all_lines[i];
 
-	std::string header = "HTTP / 1.1 200 OK\r\nVersion: HTTP/1.1\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + std::to_string(body.length()) + "\r\n\r\n";
+	std::string header = "HTTP / 1.1 200 OK\r\nVersion: HTTP/1.1\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + std::to_string(body.length());
+	header += "\r\nSet-Cookie: SESSION=" + session_key;
+	header += "\r\n\r\n";
 	std::string response = header + body;
 
 	send(client_socket, response.c_str(), response.length(), 0);
@@ -448,12 +536,26 @@ void do_script(Session &session)
 							session.lines[i].instructions[j].isVariable = true;
 
 							// Если перед переменной стоит модификатор константы
-							if (j > 0 && session.lines[i].instructions[j - 1].body == "const")
+							if (j > 0 && session.lines[i].instructions[j - 1].body == "const" || j > 1 && session.lines[i].instructions[j - 2].body == "const")
 								session.lines[i].instructions[j].isConst = true;
+							// Если перед переменной стоит модификатор static
+							if (j > 0 && session.lines[i].instructions[j - 1].body == "static")
+							{
+								if (static_data.find(session.lines[i].instructions[j].body) == static_data.end())
+								{
+									session.lines[i].instructions[j].isStatic = true;
+									static_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
+								}
+							}
 
 							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 						}
-						else session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
+						else
+						{
+							session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
+							if (session.lines[i].instructions[j].isStatic)
+								session.lines[i].instructions[j] = static_data.find(session.lines[i].instructions[j].body)->second;
+						}
 					}
 				}
 				else
@@ -683,6 +785,8 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		session.all_data_buffer.clear();
 	}
 }
+
+Session::Session(void) {}
 
 Session::Session(const u_int start_line, const SOCKET client_socket)
 {

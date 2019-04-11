@@ -6,6 +6,6 @@
 	mysql["password"] 	= ""
 
 
-	mysql["connection"][0] = connect(mysql["host"], mysql["database"], mysql["user"], mysql["password"])
+	connection = connect(mysql["host"], mysql["database"], mysql["user"], mysql["password"])
 
 #>

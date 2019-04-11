@@ -1,13 +1,16 @@
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <vector>
 #include <map>
 #include <iostream>
 #include <string>
 #include <thread>
+#include <ctime>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-#include <mysql.h>
+//#include <mysql.h>
 #include <vector>
 #include <fstream>
 #include <algorithm>
@@ -22,6 +25,10 @@
 
 // Вектор названий загруженных файлов сайта
 extern std::vector<Page> all_pages;
+// Статические данные
+extern std::map<std::string, Instruction> static_data;
+// Пользовательские сессии
+extern std::map<std::string, Session> all_user_sessions;
 
 
 void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session* _session = nullptr);
