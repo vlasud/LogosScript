@@ -6,19 +6,14 @@
 </form>
 
 <#
-	static counter
+	
+	for(i = 0; i < 100; i++)
+		a = 100
 
-	if(isset(_post["button"]))
-		if(_post["login"] == "vlasud" && _post["password"] == "123")
-			isLogin = true
-	elif(isset(_post["exit"]))
-		del_session()
 
-	if(isLogin)
-		writeln("Вы авторизованы!")
-	else
-		writeln("Авторизуйтесь!")
+	b = 100
+	b += 50
+	writeln(b)
 
-	writeln(++counter)
 	
 #>

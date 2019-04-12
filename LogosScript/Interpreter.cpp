@@ -546,22 +546,24 @@ void do_script(Session &session)
 									session.lines[i].instructions[j].isStatic = true;
 									static_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 								}
+								else session.lines[i].instructions[j] = static_data[session.lines[i].instructions[j].body];
 							}
-
 							session.all_data[session.lines[i].instructions[j].body] = session.lines[i].instructions[j];
 						}
 						else
 						{
 							session.lines[i].instructions[j] = session.all_data.find(session.lines[i].instructions[j].body)->second;
 							if (session.lines[i].instructions[j].isStatic)
-								session.lines[i].instructions[j] = static_data.find(session.lines[i].instructions[j].body)->second;
+							{
+								if (static_data.find(session.lines[i].instructions[j].body) != static_data.end())
+									session.lines[i].instructions[j] = static_data.find(session.lines[i].instructions[j].body)->second;
+							}
 						}
 					}
 				}
 				else
 				{
 					session.lines[i].instructions[j].isVariable = false;
-					//session.lines[i].instructions[j].data = session.lines[i].instructions[j].body;
 				}
 			}
 		}

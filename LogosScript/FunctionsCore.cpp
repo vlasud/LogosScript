@@ -714,14 +714,20 @@ void del(SystemFunction *object)
 	const std::vector<Instruction> &instructions = object->get_instructions();
 	Instruction result = instructions[0];
 
-	if (object->get_session()->all_data.find(result.body) == object->get_session()->all_data.end())
+	if (result.isStatic)
 	{
-		object->get_session()->error = new ErrorCore("the object was not found", object->get_session());
+		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
 		return;
 	}
 	object->get_session()->all_data.erase(result.body);
 	if(object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
 		object->get_session()->all_data_buffer.erase(result.body);
+
+	if (result.isStatic)
+	{
+		if (static_data.find(result.body) != static_data.end())
+			static_data.erase(result.body);
+	}
 
 	*res = result;
 }
