@@ -5,8 +5,19 @@ class Page
 {
 	// Имя файла
 	std::string name;
-	// Тип файла
-	bool isScriptFile;
+	// Расширение файла
+	std::string type_of_file;
+
+	void get_type_of_file(void)
+	{
+		for (register u_int i = name.length() - 1; i >= 0; i--)
+		{
+			if (name[i] == '.')
+				break;
+			type_of_file += name[i];
+		}
+		std::reverse(type_of_file.begin(), type_of_file.end());
+	}
 
 public:
 	// Вектор строк файла
@@ -26,10 +37,7 @@ public:
 
 		name = path;
 
-		// Определение типа файла (простой html или скриптовый)
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		register unsigned int size = path.length() - 1;
-		isScriptFile = path[size] == 's' && path[size - 1] == 'g' && path[size - 2] == 'l';
+		get_type_of_file();
 	}
 
 	std::string getName(void)
@@ -38,11 +46,12 @@ public:
 		return name;
 	}
 
-	bool getType(void)
-		// Получение типа файла
+	std::string getType(void)
+		// Получение расширение файла
 	{
-		return isScriptFile;
+		return type_of_file;
 	}
+	
 };
 
 // Вектор названий загруженных файлов сайта

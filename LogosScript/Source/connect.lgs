@@ -1,0 +1,11 @@
+<#
+
+	if(is_null(connection))
+		host 		= "localhost"
+		database 	= "agentstvo"
+		user 		= "root"
+		password 	= ""
+
+		connection = connect(host, database, user, password)
+
+#>

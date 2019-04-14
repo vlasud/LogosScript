@@ -125,6 +125,7 @@
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="Output.h" />
     <ClInclude Include="Page.h" />
+    <ClInclude Include="Session.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Commands.cpp" />
@@ -132,6 +133,7 @@
     <ClCompile Include="FunctionsCore.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="Operators.cpp" />
+    <ClCompile Include="Session.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

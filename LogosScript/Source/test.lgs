@@ -1,0 +1,5 @@
+<#
+	include("/test2.lgs")
+
+	write(show_info(_get))
+#>

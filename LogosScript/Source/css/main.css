@@ -1,0 +1,1925 @@
+@font-face{
+    
+    font-family: "exo norm/italic";
+    src: url("../font/Exo2-italic.ttf");
+    
+}
+
+@font-face{
+    
+    font-family: "exo norm";
+    src: url("../font/Exo2-Regular.ttf");
+
+}
+
+
+@font-face{
+    
+    font-family: "exo bold/normal";
+    src: url("../font/Exo2-Bold.ttf");
+    
+}
+
+@font-face{
+    
+    font-family: "exo bold/italic";
+    src: url("../font/Exo2-BoldItalic.ttf");
+
+    
+}
+
+@font-face{
+    
+    font-family: "exo extrabold/normal";
+    src: url("../font/Exo2-ExtraBold.ttf");
+    
+}
+
+
+@font-face{
+    
+    font-family: "exo light/italic";
+    src: url("../font/Exo2-LightItalic.ttf");
+    
+}
+
+@font-face{
+    
+    font-family: "exo extrabold/italic";
+    src: url("../font/Exo2-ExtraBoldItalic.ttf");
+    
+}
+
+@font-face{
+    
+    font-family: "exo medium/normal";
+    src: url("../font/Exo2-Medium.ttf");
+    
+}
+
+
+
+*{
+    margin: 0;
+    padding: 0;
+}
+
+a{
+    text-decoration: none;
+    color:#009cf0;
+}
+
+
+
+
+
+
+/*Окно авторизации начало*/
+
+.container__auth{
+  margin: 30px;  
+}
+
+.auth, .do_order{
+    width: 600px;
+    height: 400px;
+    background: rgba(255,255,255,1);
+    display: none;
+    
+    position: fixed;
+    top: 33%;
+    left: 35%;
+    border-radius: 30px;
+    
+    z-index: 2;
+}
+
+.grid__auth{
+    display: grid;
+    grid-template-columns: 130px 130px;
+    grid-template-rows: repeat(3, 45px);
+    place-content: center;
+    grid-column-gap: 10px;
+    grid-row-gap: 35px;
+    
+}
+
+.grid__auth input:nth-child(1){
+    grid-column: 1 / 3;
+    border-radius: 4px;
+}
+
+.grid__auth input:nth-child(2){
+    grid-column: 1 / 3;
+    border-radius: 4px;
+}
+
+
+
+.grid__auth input[type="text"]{
+    font-family: "exo medium/normal";
+    font-size: 20px;
+    text-align: center;
+    
+    border: 0px;
+    outline: none;
+    
+    background: #f39100;
+    color: rgba(255,255,255, 1);
+}
+
+.grid__auth input[type="text"]::placeholder{
+    
+    color: rgba(255,255,255, 1);
+}
+
+.grid__auth input[type="password"]{
+    font-family: "exo medium/normal";
+    font-size: 20px;
+    text-align: center;
+    
+    border: 0px;
+    outline: none;
+    
+    background: #f39100;
+    color: rgba(255,255,255, 1);
+}
+
+.grid__auth input[type="password"]::placeholder{
+    
+    color: rgba(255,255,255, 1);
+}
+
+.grid__auth input[type="submit"]{
+    
+    font-size: 16px;
+    font-family: "exo medium/normal";
+    color: rgba(255,255,255, 1);
+    
+    background: rgba(243,145,0,1);
+
+    border: 0;
+    outline: 0;
+    
+}
+
+.grid__auth input[type="submit"]:hover{
+    background: rgba(243, 145, 0, .5);
+    color: rgba(255,255,255, 1);
+
+    border: 0;
+    outline: 0;
+}
+
+.grid__auth button{
+    
+    font-family: "exo medium/normal";
+    font-size: 16px;
+    color: rgba(255,255,255, 1);
+    
+    background: rgba(7,107,180,1);
+    
+    border: 0px;
+    outline: 0;
+    
+}
+
+.grid__auth button:hover{
+    background: rgba(7,107,180,.7);
+    color: rgba(255,255,255, .8);
+    outline: 0;
+}
+
+.auth h2, .do_order h2{
+    color: rgba(0,0,0,1);
+    text-align: center;
+    font-size: 32px;
+    font-family: "exo bold/italic";
+    
+    padding-top: 50px;
+    padding-bottom: 30px;
+}
+
+#shadow{ 
+    position: fixed;
+    width:100%;
+    height:100%;
+    z-index:1; /* поверх всех  кроме окна*/
+    background: rgba(0,0,0, .5);
+    left:0;
+    top:0;
+}
+
+
+/*Окно авторизации конец*/
+
+
+
+
+
+
+
+
+/*Окно заказа начало*/
+
+.container__auth{
+  margin: 30px;  
+}
+
+.auth{
+    width: 600px;
+    height: 400px;
+    background: rgba(255,255,255,1);
+    display: none;
+    
+    position: fixed;
+    top: 33%;
+    left: 35%;
+    border-radius: 30px;
+    
+    z-index: 2;
+}
+
+.grid__bespeak{
+    display: grid;
+    grid-template-columns: 130px 130px;
+    grid-template-rows: repeat(4, 45px);
+    place-content: center;
+    grid-column-gap: 30px;
+    grid-row-gap: 30px;
+    
+}
+
+.grid__bespeak input:nth-child(1){
+    grid-column: 1 / 3;
+    border-radius: 4px;
+}
+
+.grid__bespeak input:nth-child(2){
+    grid-column: 1 / 3;
+    border-radius: 4px;
+}
+
+.grid__bespeak p:nth-child(5){
+    grid-column: 1 / 3;
+    place-self: center;
+    text-align: center;
+    padding-bottom: 20px;
+    font-size: 20px;
+}
+
+
+
+.grid__bespeak input[type="text"]{
+    font-family: "exo medium/normal";
+    font-size: 20px;
+    text-align: center;
+    
+    border: 0px;
+    outline: none;
+    
+    background: #f39100;
+    color: rgba(255,255,255, 1);
+}
+
+.grid__bespeak input[type="text"]::placeholder{
+    
+    color: rgba(255,255,255, 1);
+}
+
+.grid__bespeak input[type="tel"]{
+    font-family: "exo medium/normal";
+    font-size: 20px;
+    text-align: center;
+    
+    border: 0px;
+    outline: none;
+    
+    background: #f39100;
+    color: rgba(255,255,255, 1);
+}
+
+.grid__bespeak input[type="tel"]::placeholder{
+    
+    color: rgba(255,255,255, 1);
+}
+
+.grid__bespeak input[type="submit"]{
+    
+    font-size: 16px;
+    font-family: "exo medium/normal";
+    color: rgba(255,255,255, 1);
+    
+    background: rgba(243,145,0,1);
+
+    border: 0;
+    outline: 0;
+    
+}
+
+.grid__bespeak input[type="submit"]:hover{
+    background: rgba(243, 145, 0, .5);
+    color: rgba(255,255,255, 1);
+
+    border: 0;
+    outline: 0;
+}
+
+.grid__bespeak button{
+    
+    font-family: "exo medium/normal";
+    font-size: 16px;
+    color: rgba(255,255,255, 1);
+    
+    background: rgba(7,107,180,1);
+    
+    border: 0px;
+    outline: 0;
+    
+}
+
+.grid__bespeak button:hover{
+    background: rgba(7,107,180,.7);
+    color: rgba(255,255,255, .8);
+    outline: 0;
+}
+
+.auth h2{
+    color: rgba(0,0,0,1);
+    text-align: center;
+    font-size: 32px;
+    font-family: "exo bold/italic";
+    
+    padding-top: 50px;
+    padding-bottom: 30px;
+}
+
+#shadow{ 
+    position: fixed;
+    width:100%;
+    height:100%;
+    z-index:1; /* поверх всех  кроме окна*/
+    background: rgba(0,0,0, .5);
+    left:0;
+    top:0;
+}
+
+
+/*Окно заказа конец*/
+
+
+/*Шапка с авторизацией НАЧАЛО*/
+.header_authorized{
+    background: #f7f7f7;
+    width: 100%;
+    height: 60px;
+    
+    
+    display: grid;
+    grid-template-columns: auto auto auto auto 1fr;
+    grid-template-rows: 60px;
+    grid-column-gap: 40px;
+    place-items: center;
+    
+
+    
+    border-bottom: 1px solid #d8d8d8;
+}
+
+
+
+.header_authorized a:nth-child(1){
+    color: #a1a1a1;
+    padding-left: 50px;
+}
+
+.header_authorized a:nth-child(1):hover{
+    color: #ff6163;
+}
+
+.header_authorized a:nth-child(2){
+    color: #a1a1a1;
+}
+
+.header_authorized a:nth-child(2):hover{
+    color: #ff6163;
+}
+
+.header_authorized a:nth-child(3){
+    color: #a1a1a1;
+}
+
+.header_authorized a:nth-child(3):hover{
+    color: #ff6163;
+}
+
+.header_authorized a:nth-child(4){
+    color: #a1a1a1;
+}
+
+.header_authorized a:nth-child(4):hover{
+    color: #ff6163;
+}
+
+.header_authorized p:nth-child(5){
+    justify-self: end;
+    padding-right: 50px;
+}
+
+
+
+
+
+
+
+
+/*Шапка с авторизацией КОНЕЦ*/
+
+
+
+/*Шапка без авторизации НАЧАЛО*/
+
+.container{
+    position: relative;
+    margin: 0 250px;
+    
+}
+
+.header{
+    background: #f7f7f7;
+    width: 100%;
+    height: 60px;
+    
+    
+    display: grid;
+    grid-template-columns: auto auto auto 1fr;
+    grid-template-rows: 60px;
+    grid-column-gap: 40px;
+    place-items: center;
+    
+
+    
+    border-bottom: 1px solid #d8d8d8;
+    
+    
+}
+
+.header a:nth-child(1){
+    color: #a1a1a1;
+    padding-left: 50px;
+}
+
+.header a:nth-child(1):hover{
+    color: #ff6163;
+}
+
+.header a:nth-child(2){
+    color: #a1a1a1;
+}
+
+.header a:nth-child(2):hover{
+    color: #ff6163;
+}
+
+.header a:nth-child(3){
+    color: #a1a1a1;
+}
+
+.header a:nth-child(3):hover{
+    color: #ff6163;
+}
+
+.header a:nth-child(4){
+    justify-self: end;
+    padding-right: 50px;
+}
+
+.header a:nth-child(4):hover{
+    color: #ff6163;
+}
+
+
+
+
+/*Кнопка подать объявление Начало*/
+/*
+.header a:nth-child(6){
+    background: #01aaff;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.header a:nth-child(6):hover{
+    background: #0091d9;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+*/
+/*Кнопка подать объявление Конец*/
+
+
+
+/*Шапка без авторизации КОНЕЦ*/
+
+
+
+
+
+
+
+
+
+.logo{ 
+    margin: 50px 300px;
+    
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items:center;
+}
+
+.logo img{
+    display: inline-block;
+    
+    width: 100%; 
+}
+
+
+
+
+
+
+
+
+
+
+
+.search{
+    background: #adadad;
+    
+    width: 100%;
+    height: 50px;
+    
+    color: black;
+    
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    grid-template-rows: 40px;
+    grid-column-gap: 10px;
+    
+    align-content: center;
+    
+    
+    padding: 0 10px;
+    
+    border-radius: 5px;
+}
+
+/*
+.search select{
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+    
+    cursor: pointer;
+
+}
+*/
+
+.search input{
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    
+    
+}
+
+.search input[type="text"]{
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+}
+
+.search input[type="text"]:hover{
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.search input[type="text"]:focus{
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.search input[type="submit"]{
+    border-radius: 5px;
+    font-size: 18px;
+    background: white;
+}
+
+.search input[type="submit"]:hover{
+    background: #ccc;
+    cursor: pointer;
+}
+
+
+
+/*Объявления начало*/
+
+.ads{
+    
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    
+    grid-row-gap: 30px;
+
+    
+    
+    margin-top: 100px;
+    margin-bottom: 100px;
+    
+    
+}
+
+.ads h2{
+    
+    text-align: center;
+    font-size: 50px;
+    
+}
+
+
+.ads h2:nth-child(1){
+    
+    grid-column-start: 1;
+    grid-column-end: 4;
+    
+    margin-bottom: 50px; 
+    
+}
+
+.ads div:nth-child(8){
+    
+    grid-column-start: 1;
+    grid-column-end: 4;
+   
+    
+    font-size: 20px;
+    
+    
+}
+
+.ads-this{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 200px 30px 20px 20px;
+    
+    place-items:center;
+    
+}
+
+
+
+
+.ads-this a img{
+    
+    width: 330px;
+    height: 195px;
+
+}
+
+.ads-this a img:hover{
+    
+    opacity: 0.7;
+
+}
+
+
+.time_ads{
+    color: darkgray;
+}
+
+/*Объявления конец*/
+
+
+
+/*Подвал начало*/
+
+.footer{
+    
+    margin-top: 100px;
+    
+    width:100%;
+    height: 400px;
+    
+    
+    background: #f1f1f1;
+    
+}
+
+
+.container__contact{
+    padding-top: 50px;
+    padding-left: 50px;
+    padding-right: 50px;
+    padding-bottom: 30px;
+}
+
+.contact__grid{
+    
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: 100px 100px;
+    grid-gap: 10px;
+    
+    place-items:center;
+}
+
+.contact__grid div:nth-child(1){
+    grid-column: 1 / 4;
+    
+    font-size: 45px;
+    font-family: "exo bold/normal";
+}
+
+.logo__contact span{
+    width: 68%;
+    height: 2px;
+
+    
+    border-bottom: 2px black dotted;
+    
+    display: block;
+    
+    position: absolute;
+    left:15.8%;
+    right:30%;
+}
+
+
+.logo__contact img{
+    width: 700px;
+    height: 100px;
+}
+
+.contact__grid div:nth-child(2){
+    grid-row: 2 / 4;
+    font-family: "exo bold/italic";
+    font-size: 30px;
+}
+
+.contact__grid div:nth-child(3){
+    grid-row: 2 / 4;
+    font-family: "exo norm/italic";
+    font-size: 25px;
+    text-align: center;
+}
+
+.fab{
+    padding-right: 50px;
+    font-size: 40px;
+}
+
+.fa-vk{
+    padding-left: 50px;
+}
+
+.contact__grid div a{
+    color:black;
+/*    transition: top 1s ease-out 0.5s;*/
+}
+
+.contact__grid div a:hover{
+    color: rgba(7,107,180,1);
+}
+
+
+.contact__grid div:nth-child(4){
+    grid-row: 2 / 4;
+    grid-column: 3;
+    font-family: "exo bold/italic";
+    font-size: 30px;
+}
+
+
+
+
+/*Подвал конец*/
+
+
+
+
+
+
+
+
+
+
+/*                                        СТРАНИЦА ADS НАЧАЛО                           */
+
+
+
+
+.page_ads{
+    
+    margin-top: 100px;
+    width: 100%;
+    
+    display: grid;
+    grid-template-columns: 600px 1fr;
+
+    
+}
+
+.filter{
+    width: 100%;
+    background-color: #f1f1f1;
+    height: 950px;
+
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 200px 200px 200px 200px 100px;
+    place-items: center;
+    
+    
+}
+
+.filter button{
+    width: 150px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+}
+
+.filter button:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+    
+}
+
+.filter button:active{
+    cursor: pointer;
+    background: rgba(255, 145, 0, 1);
+    
+}
+
+
+
+.filter_price p{
+    text-align: center;
+    font-size: 30px;
+    padding-bottom: 40px;
+    
+    
+}
+
+.filter_price input[type="text"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+
+}
+
+.filter_price input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.filter_price input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+
+
+
+.filter_floor p{
+    text-align: center;
+    font-size: 30px;
+    padding-bottom: 40px;
+    
+}
+
+
+.filter_floor input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.filter_floor input[type="number"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.filter_floor input[type="number"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+
+
+.filter_rooms p{
+    text-align: center;
+    font-size: 30px;
+    padding-bottom: 40px;
+    
+}
+
+
+.filter_rooms input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.filter_rooms input[type="number"]:hover{
+    cursor: text;
+    
+     border: 2px solid rgba(255,176,32,.3);
+}
+
+
+.filter_rooms input[type="number"]:focus{
+     cursor: text;
+    
+     border: 2px solid #f39100;
+}
+
+.filter_district p{
+    text-align: center;
+    font-size: 30px;
+    padding-bottom: 40px;
+    
+}
+
+
+
+.filter_district input[type="text"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.filter_district input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.filter_district input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+
+
+.ads_all{
+    width: 100%;
+
+    
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px;
+    grid-auto-rows: 270px;
+    grid-gap: 50px;
+
+ 
+}
+
+
+.ads_all h2{
+    width: 100%;
+    height: 500px;
+    
+    
+    text-align: center;
+    font-size: 30px;
+ 
+}
+
+
+
+
+
+
+
+
+/*                                        СТРАНИЦА ADS КОНЕЦ                           */
+
+
+
+/*                                        СТРАНИЦА Houses НАЧАЛО                         */
+
+
+.house{
+    width: 100%;
+    height: 900px;
+    
+    background: #f1f1f1;
+    
+    display: grid;
+    grid-template-columns: 60% 1fr ;
+    grid-template-rows: 100px 500px 300px;
+
+   
+    border: 1px solid black;
+
+}
+
+.house div:nth-child(1){
+    
+    grid-column: 1 / 3;
+    grid-row: 1;
+    
+    border-bottom:  1px solid black;
+}
+
+.house div:nth-child(4){
+    
+    grid-column: 1 / 3;
+    
+    place-self:center;
+    
+    
+}
+  
+
+
+.house div:nth-child(3){
+    
+    place-self: center;
+    
+    
+}
+    
+
+.title{
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: 100px;
+    place-items: center;
+    
+    font-size: 35px;
+    
+
+}
+
+.title p:nth-child(1){
+    justify-self: end;
+    padding-left: 50px;
+}
+
+.title p:nth-child(3){
+    justify-self: end;
+    padding-right: 50px;
+}
+
+
+.swiper-container {
+      width: 100%;
+      height: 500px;
+}
+.swiper-slide {
+      text-align: center;
+      font-size: 18px;
+      background: gray;
+      /* Center slide text vertically */
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-pack: center;
+      -ms-flex-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+}
+
+
+
+.information{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    
+    grid-row-gap: 110px;
+    
+
+    
+}
+
+.information p{
+    
+    font-size: 30px;
+
+    
+}
+
+
+
+.order_authorized{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 50px;
+    place-items:center;
+    
+    grid-column-gap: 30px;
+    
+}
+
+
+
+.order_authorized button{
+    width: 200px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+    
+    
+}
+
+.order_authorized button:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+    
+}
+
+.order_authorized button:active{
+    cursor: pointer;
+    background: rgba(255, 145, 0, 1);
+    
+}
+
+
+.order{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px 50px;
+    place-items:center;
+    
+    
+}
+
+.order h2{
+   padding-bottom: 50px;
+}
+
+.order button{
+    width: 200px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+    
+    
+}
+
+.order button:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+    
+}
+
+.order button:active{
+    cursor: pointer;
+    background: rgba(255, 145, 0, 1);
+    
+}
+
+
+
+/*                                        СТРАНИЦА Houses КОНЕЦ                         */
+
+
+
+
+
+
+
+/*                                        СТРАНИЦА Admin НАЧАЛО                         */
+
+
+.admin_edit{
+    width: 100%;
+    height: 800px;
+    background: #f1f1f1;
+    
+    
+    margin-top:100px;
+    padding-top:50px;
+    
+    
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 50px auto;
+    place-items:center;
+    grid-row-gap: 40px;
+}
+
+
+.admin_edit h2:nth-child(1){
+   grid-column: 1 / 3;
+    font-size:30px;
+}
+
+.admin_edit table:nth-child(2){
+   align-self:start;
+}
+
+.admin_edit div:nth-child(3){
+   align-self:start;
+}
+
+
+
+.table {
+
+    margin-left:20px;
+    border: 3px solid chocolate;
+    text-align: center;
+    background: #2d2d2d;
+    color: white;
+    width: 100%;
+    margin-bottom: 30px;
+    
+    border-collapse: collapse; 
+    
+    padding: 10px;
+}
+
+
+td,th{
+    font-size: 16px;
+    border: 1px solid chocolate;
+
+}
+
+.table a {
+    color:white;
+}
+
+.table .active > a:hover{ 
+    color:chocolate;
+}
+
+
+
+
+.addPerson{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px auto;
+    
+    place-items: center;
+    
+    
+}
+
+
+.addPerson h3:nth-child(1){
+    align-self: start;
+    font-size: 20px;
+    
+}
+
+
+
+
+.form_add_person{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(8,50px);
+    
+    place-items:center;
+    grid-row-gap: 20px;
+    
+}
+
+
+.form_add_person input{
+    font-size: 20px;
+    width: 300px;
+}
+
+.form_add_person input[type="submit"]{
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+}
+
+.form_add_person input[type="submit"]:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+}
+
+
+.form_add_person input[type="text"],input[type="tel"],input[type="password"],input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.form_add_person input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_person input[type="tel"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_person input[type="password"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_person input[type="number"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_person input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_person input[type="tel"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_person input[type="password"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_person input[type="number"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.realty_edit{
+    width: 100%;
+    height: 800px;
+    background: #f1f1f1;
+    
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 50px auto;
+    place-items: center;
+    grid-row-gap: 40px;
+}
+
+
+
+
+.realty_edit h2:nth-child(1){
+   grid-column: 1 / 3;
+    font-size:30px;
+}
+
+.realty_edit table:nth-child(2){
+   align-self:start;
+}
+
+.realty_edit div:nth-child(3){
+   align-self:start;
+}
+
+.addRealty{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px auto;
+    
+    place-items: center;
+    
+    
+}
+
+.addRealty h3:nth-child(1){
+    align-self: start;
+    font-size: 20px;
+    
+}
+
+
+.form_add_realty{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(7,50px);
+    
+    place-items:center;
+    grid-row-gap: 20px;
+    
+}
+
+
+.form_add_realty input{
+    font-size: 20px;
+    width: 400px;
+}
+
+.form_add_realty input[type="submit"]{
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+}
+
+.form_add_realty input[type="submit"]:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+}
+
+.form_add_realty input[type="file"]{
+    border-radius: 5px;
+ 
+
+    outline: none;
+    font-size: 20px;
+}
+
+.form_add_realty input[type="file"]:hover{
+    cursor: pointer;
+
+}
+
+
+.form_add_realty input[type="text"],input[type="tel"],input[type="password"],input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.form_add_realty input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_realty input[type="tel"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_realty input[type="password"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_realty input[type="number"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_add_realty input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_realty input[type="tel"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_realty input[type="password"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_add_realty input[type="number"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+
+
+.table_order{
+    width: 100%;
+    height: 800px;
+    background: #f1f1f1;
+    
+
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px auto;
+    place-items: center;
+    grid-row-gap: 40px;
+}
+
+
+
+
+.table_order h2:nth-child(1){
+    font-size:30px;
+}
+
+.table_order table:nth-child(2){
+   align-self:start;
+}
+
+
+
+
+
+/*                                        СТРАНИЦА admin Конец                         */
+
+
+
+
+
+
+
+/*                                        СТРАНИЦА edit Начало                         */
+
+
+/*Изменение объявления начало*/
+.editRealtyPage{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px auto;
+    
+    place-items: center;
+    
+    
+    background: #f1f1f1;
+    margin-top:50px;
+    grid-row-gap: 30px;
+}
+
+.editRealtyPage h3:nth-child(1){
+    align-self: start;
+    font-size: 30px;
+    margin-top: 20px;
+
+}
+
+
+.form_edit_realty{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(7,50px);
+    
+    place-items:center;
+    grid-row-gap: 20px;
+    
+    padding-bottom: 50px;
+}
+
+
+.form_edit_realty input{
+    font-size: 20px;
+    width: 400px;
+}
+
+.form_edit_realty input[type="submit"]{
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+}
+
+.form_edit_realty input[type="submit"]:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+}
+
+.form_edit_realty input[type="file"]{
+    border-radius: 5px;
+ 
+
+    outline: none;
+    font-size: 20px;
+}
+
+.form_edit_realty input[type="file"]:hover{
+    cursor: pointer;
+
+}
+
+
+.form_edit_realty input[type="text"],input[type="tel"],input[type="password"],input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.form_edit_realty input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_realty input[type="tel"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_realty input[type="password"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_realty input[type="number"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_realty input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_realty input[type="tel"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_realty input[type="password"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_realty input[type="number"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+/*Изменение объявления конец*/
+
+
+
+
+
+
+
+/*Изменение пользователя начало*/
+
+.editPersonPage{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px auto;
+    
+    place-items: center;
+    
+    background: #f1f1f1;
+    margin-top:50px;
+    grid-row-gap: 30px;
+}
+
+
+.editPersonPage h3:nth-child(1){
+    align-self: start;
+    font-size: 30px;
+    margin-top: 20px;
+}
+
+
+
+
+.form_edit_person{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(8,50px);
+    
+    place-items:center;
+    grid-row-gap: 20px;
+    
+}
+
+
+.form_edit_person input{
+    font-size: 20px;
+    width: 300px;
+}
+
+.form_edit_person input[type="submit"]{
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(243, 145, 0, 1);
+    
+    border:none;
+    outline: none;
+    
+    color:white;
+    font-size: 20px;
+}
+
+.form_edit_person input[type="submit"]:hover{
+    cursor: pointer;
+    background: rgba(243, 145, 0, .8);
+}
+
+
+.form_edit_person input[type="text"],input[type="tel"],input[type="password"],input[type="number"]{
+    outline: none;
+    border: 0;
+    width: 150xp;
+    height: 40px;
+    
+    border: 1px rgba(7,107,180,.7) solid;
+    border-radius: 5px;
+    padding-left: 10px;
+    font-size: 18px;
+    
+}
+
+.form_edit_person input[type="text"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_person input[type="tel"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_person input[type="password"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_person input[type="number"]:hover{
+    cursor: text;
+    
+    border: 2px solid rgba(255,176,32,.3);
+}
+
+.form_edit_person input[type="text"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_person input[type="tel"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_person input[type="password"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+.form_edit_person input[type="number"]:focus{
+    cursor: text;
+    
+    border: 2px solid #f39100;
+}
+
+/*Изменение пользователя конец*/
+
+
+
+
+
+
+
+
+
+/*                                        СТРАНИЦА edit Конец                         */
+
+

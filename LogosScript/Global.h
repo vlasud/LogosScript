@@ -10,7 +10,7 @@
 #include <ctime>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-//#include <mysql.h>
+#include <mysql.h>
 #include <vector>
 #include <fstream>
 #include <algorithm>
@@ -19,6 +19,7 @@
 #include "ErrorCore.h"
 #include "Interpreter.h"
 #include "FunctionsCore.h"
+#include "Session.h"
 
 #define EMPTY ""
 
@@ -39,3 +40,5 @@ void do_line_script_operators(Session &session, const unsigned int line, const u
 int parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int end);
 void write_data_from_local_to_global(Session &session, Instruction &first, Instruction &second);
 bool do_line_script_commands(Session &session, unsigned int line, const unsigned int begin, unsigned int end);
+TYPE_OF_INSTRUCTION_FOR_PARSER get_type_of_instruction(char ch);
+TYPE_OF_DATA get_type_of_data(std::string data);

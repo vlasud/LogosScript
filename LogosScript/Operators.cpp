@@ -990,8 +990,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
-							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
+							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
@@ -1020,8 +1019,8 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
-							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
+							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
@@ -1040,7 +1039,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i - 1].data;
 						break;
 					}
 					}
@@ -3075,7 +3074,7 @@ void write_data_from_local_to_global(Session &session, Instruction &first, Instr
 		session.all_data.find(first.body)->second.data[first.selected_char] = second.data[0];
 	// Если это не массив
 	else if (first.ptr == nullptr)
-	{
+	{ 
 		session.all_data.find(first.body)->second.data = second.data;
 		session.all_data.find(first.body)->second.type_of_data = second.type_of_data;
 	}
@@ -3085,15 +3084,25 @@ void write_data_from_local_to_global(Session &session, Instruction &first, Instr
 		first.ptr->type_of_data = second.type_of_data;
 
 		session.all_data.find(first.body)->second = first;
+		session.all_data.find(first.body)->second.ptr = nullptr;
 	}
 
-	if(second.array.size() > 0 && second.ptr == nullptr)
+	if (second.array.size() > 0 && second.ptr == nullptr)
+	{
 		session.all_data.find(first.body)->second.array = second.array;
-	if(second.array_map.size() > 0 && second.ptr == nullptr)
+		first.array = second.array;
+	}
+	if (second.array_map.size() > 0 && second.ptr == nullptr)
+	{
 		session.all_data.find(first.body)->second.array_map = second.array_map;
+		first.array_map = second.array_map;
+	}
 
 	first.data = second.data;
 	first.type_of_data = second.type_of_data;
+
+	first.ptr = nullptr;
+	second.ptr = nullptr;
 
 	// Если данные - статические
 	if (first.isStatic)

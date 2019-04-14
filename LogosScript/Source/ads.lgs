@@ -1,0 +1,109 @@
+<#
+
+    include("/header.lgs")
+
+#>
+       
+        
+    <div class="logo">
+        <img src="img/logo1.png" alt="Логотип">
+    </div>
+    
+    
+    <div class="container">
+            <div class="search">
+<!--
+                   <select name="Тип дома" id="">
+                        <option value="Монолитные дома">Монолитные дома</option>
+                        <option value="Монолитно-кирпичные дома">Монолитно-кирпичные дома</option>
+                        <option value="Кирпичные дома">Кирпичные дома</option>
+                        <option value="Панельные дома">Панельные дома</option>
+                    </select>
+-->
+                    <input type="text" placeholder="Поиск по объявлениям">
+                    <input type="submit" value="Найти">
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="page_ads">
+
+                <div class="filter">
+                    <div class="filter_price">
+                        <p>Цена</p>
+                        <input type="text" placeholder="Цена от">
+                        <input type="text" placeholder="до, руб">
+                    </div>
+                    <div class="filter_floor">
+                        <p>Этаж</p>
+                        <input type="number" placeholder="Укажите номер этажа">
+                    </div>
+                    <div class="filter_rooms">
+                        <p>Комнаты</p>
+                        <input type="number" placeholder="Количество комнат">
+                    </div>
+                    <div class="filter_district">
+                        <p>Район</p>
+                        <input type="text" placeholder="Укажите район">
+                    </div>
+                    <button>Показать</button>
+                </div>
+
+
+                <div class="ads_all">
+                   <h2>Все объявления</h2>
+                    <div class="ads-this">
+                           <a href="house.html">
+                            <img src="img/houses/s1200.jpg" alt="Картинка">
+                            </a>
+                            <h3>1 200 000 р</h3>
+                            <p>р-н Центральный</p>
+                            <p class="time_ads">Сегодня в 10:47</p>
+                    </div>
+                    <div class="ads-this">
+                           <a href="#">
+                            <img src="img/houses/s1200.jpg" alt="Картинка">
+                            </a>
+                            <h3>1 200 000 р</h3>
+                            <p>р-н Центральный</p>
+                            <p class="time_ads">Сегодня в 10:47</p>
+                    </div>
+                    <div class="ads-this">
+                           <a href="#">
+                            <img src="img/houses/s1200.jpg" alt="Картинка">
+                            </a>
+                            <h3>1 200 000 р</h3>
+                            <p>р-н Центральный</p>
+                            <p class="time_ads">Сегодня в 10:47</p>
+                    </div>
+                    <div class="ads-this">
+                           <a href="#">
+                            <img src="img/houses/s1200.jpg" alt="Картинка">
+                            </a>
+                            <h3>1 200 000 р</h3>
+                            <p>р-н Центральный</p>
+                            <p class="time_ads">Сегодня в 10:47</p>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+    
+    
+    
+    
+    
+    
+        <div class="footer">
+            <div class="container__contact">
+                <div class="contact__grid">
+                    <div class="logo__contact"><img src="img/logo1.png" alt="Логотип"><span></span></div>
+                    <div>+79143548352</div>
+                    <div><a href="#"><i class="fab fa-vk"></i></a><a href="#"><i class="fab fa-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-facebook"></i></a></div>
+                    <div>ул.Ленина 8</div>
+                </div>
+            </div>
+        </div>
+    <script src="js/script1.js"></script>
+</body>
+</html>

@@ -162,6 +162,8 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 {
 	Page page_object = all_pages[file_id];
 	bool isError = false;
+	bool isScriptFound = false;
+	std::string redirect_page = EMPTY;
 
 	// Получение идентификатора сессии
 	std::string session_key = get_session_id(request);
@@ -173,26 +175,50 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 		if (page_object.all_lines[i][0] == '<' && page_object.all_lines[i][1] == '#')
 		{
 			for (unsigned register int j = i; j < count_lines_of_file; j++)
+			{
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
 					Session session(i + 2, client_socket);
-					if (session_key != EMPTY)
+					session.session_key = session_key;
+
+					if (session.session_key != EMPTY)
 					{
 						if (all_user_sessions.find(session_key) != all_user_sessions.end())
 						{
 							session.all_data = all_user_sessions[session_key].all_data;
 							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
+							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
 						}
 						else all_user_sessions[session_key] = session;
 					}
 					else
 					{
-						session_key = generate_session_key();
+						if (_session->session_key == EMPTY)
+							session_key = generate_session_key();
+						else
+						{
+							session_key = _session->session_key;
+							session.all_data = all_user_sessions[session_key].all_data;
+							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
+							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
+						}
 					}
-					session.set_file_name(page_object.getName());
+					session.set_file_name(page_object.getName());							
 
 					Instruction global_data = parse_global_data(request);
-					session.all_data[global_data.body] = global_data;
+					// Если GET и POST параметров передано не было
+					if (global_data.body == EMPTY)
+					{
+						std::map<std::string, Instruction>::iterator iter = session.all_data.find("_post");
+						if (iter != session.all_data.end())
+							session.all_data.erase(iter);
+
+						iter = session.all_data.find("_get");
+						if (iter != session.all_data.end())
+							session.all_data.erase(iter);
+					}
+					else
+						session.all_data[global_data.body] = global_data;
 
 					if (static_data.size() > 0)
 						session.all_data.insert(static_data.begin(), static_data.end());
@@ -200,17 +226,18 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					// Копирование всех данных если была вызвана функция include
 					if (_session != nullptr)
 					{
-						session.all_data.insert(_session->all_data.begin(), _session->all_data.end());
+						session.mysql_connections = _session->mysql_connections;
+						session.all_data = _session->all_data;
+						session.all_data_buffer = _session->all_data_buffer;
 						session.definition_functions = _session->definition_functions;
-						//session.mysql_connections = _session->mysql_connections;
-					}
+					}					
 
 					read_script(session, page_object, i + 1, j + 1);
-
+				
 					if (!session.isSessionDelete)
 						all_user_sessions[session_key] = session;
 					// Если была команда удаления текущей сессии
-					else if(all_user_sessions.find(session_key) != all_user_sessions.end())
+					else if (all_user_sessions.find(session_key) != all_user_sessions.end())
 						all_user_sessions.erase(session_key);
 
 					// Если была синтаксическая ошибка - показать сообщение ошибки
@@ -224,15 +251,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					// Иначе заменить исполняемый скрипт на результат работы скрипта
 					else
 					{
-						// Копирование всех данных если была вызвана функция include
-						if (_session != nullptr)
-						{
-							_session->all_data = session.all_data;
-							_session->definition_functions = session.definition_functions;
-							_session->output = session.output;
-							//_session->mysql_connections = session.mysql_connections;
-							return;
-						}
+						redirect_page = session.redirect_page;
 
 						page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
 
@@ -241,27 +260,67 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 
 						for (register unsigned int mn = 0; mn < session.output.output_data.size(); mn++)
 							page_object.all_lines.insert(page_object.all_lines.begin() + i, session.output.output_data[mn]);
+
+						// Копирование всех данных если была вызвана функция include
+						if (_session != nullptr)
+						{
+							_session->mysql_connections = session.mysql_connections;
+							_session->all_data = session.all_data;
+							_session->all_data_buffer = session.all_data_buffer;
+							_session->definition_functions = session.definition_functions;
+
+							for (register u_int o_i = 0; o_i < page_object.all_lines.size(); o_i++)
+								_session->output.output_data.push_back(page_object.all_lines[o_i]);
+						}
 					}
 
 					count_lines_of_file = page_object.all_lines.size();
+
+					i = j;
 					break;
 				}
+				if (redirect_page != EMPTY)
+					break;
+			}
+
 			if (isError)
 				break;
 		}
+		if (redirect_page != EMPTY)
+			break;
 	}
 
+	if (_session != nullptr && !isError) return;
+
 	std::string body = EMPTY;
+	std::string header;
 
-	unsigned int count_line_of_page = page_object.all_lines.size();
-	for (unsigned register int i = 0; i < count_line_of_page; i++)
-		body += page_object.all_lines[i];
+	if (redirect_page != EMPTY)
+	{
+		header += "HTTP/1.1 302 OK\r\n";
+		header += "Server: LogosServer / 1.0 (Win64)\r\n";
+		header += "X-Powered-By: Logos / 1.0\r\n";
+		header += "Location: " + redirect_page + "\r\n";
+	}
+	else
+	{
+		unsigned int count_line_of_page = page_object.all_lines.size();
+		for (unsigned register int i = 0; i < count_line_of_page; i++)
+			body += page_object.all_lines[i];
 
-	std::string header = "HTTP / 1.1 200 OK\r\nVersion: HTTP/1.1\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + std::to_string(body.length());
-	header += "\r\nSet-Cookie: SESSION=" + session_key;
-	header += "\r\n\r\n";
+		header += "HTTP/1.1 200 OK\r\n";
+		header += "Server: LogosServer / 1.0 (Win64)\r\n";
+		header += "X-Powered-By: Logos / 1.0\r\n";
+		header += "Content-Length: " + std::to_string(body.length()) + "\r\n";
+		header += "Keep-Alive: timeout=5, max=86\r\n";
+		header += "Cache-Control: no-cache; no-store; must-revalidate\r\n";
+		header += "Connection: Keep-Alive\r\n";
+		header += "Content-Type: text/html; charset=UTF-8\r\n";
+		header += "Set-Cookie: SESSION=" + session_key + "\r\n";
+		header += "Content-Language: ru-RU\r\n";
+		header += "\r\n\r\n";
+	}
 	std::string response = header + body;
-
 	send(client_socket, response.c_str(), response.length(), 0);
 	closesocket(client_socket);
 }
@@ -344,6 +403,14 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 		register int space_counter = -1;
 		unsigned register int j = 0;
 
+		u_int space_counter_ = 0;
+		for (register u_int j = 0; j < page_object.all_lines[i].length(); j++)
+			if (page_object.all_lines[i][j] == ' ')
+				space_counter_++;
+			else break;
+
+		session.lines[line_counter].namespace_level += space_counter_ / 4;
+
 		while (page_object.all_lines[i][++space_counter] == '\t')
 		{
 			session.lines[line_counter].namespace_level++;
@@ -401,6 +468,7 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 
 	do_script(session);
 }
+
 
 void do_script(Session &session)
 // Выполнение скрипта
@@ -788,46 +856,6 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	}
 }
 
-Session::Session(void) {}
-
-Session::Session(const u_int start_line, const SOCKET client_socket)
-{
-	this->start_line = start_line;
-	this->client_socket = client_socket;
-}
-
-Session::~Session()
-{
-	delete this->error;
-}
-
-u_int Session::get_start_line(void)
-{
-	return this->start_line;
-}
-u_int Session::get_current_line(void)
-{
-	return this->current_line;
-}
-
-void Session::update_current_line(u_int new_line)
-{
-	this->current_line = new_line;
-}
-
-void Session::set_file_name(const std::string file_name)
-{
-	this->file_name = file_name;
-}
-std::string Session::get_file_name(void)
-{
-	return this->file_name;
-}
-
-SOCKET Session::get_client_socket(void)
-{
-	return this->client_socket;
-}
 
 Instruction::Instruction(const std::string body)
 {
@@ -839,7 +867,7 @@ Instruction::Instruction(const std::string body)
 		this->type_of_instruction = TYPE_OF_INSTRUCTION::OPERATOR;
 	else if (std::find(COMMANDS.begin(), COMMANDS.end(), body) != COMMANDS.end())
 		this->type_of_instruction = TYPE_OF_INSTRUCTION::COMMAND;
-	else 
+	else
 		this->type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 
 	if (type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
@@ -858,7 +886,7 @@ Instruction::Instruction(const std::string body)
 			if (this->type_of_data == TYPE_OF_DATA::_STRING)
 			{
 				data = EMPTY;
-				for(register unsigned int i = 1; i < body.length() - 1; i++)
+				for (register unsigned int i = 1; i < body.length() - 1; i++)
 					this->data += body[i];
 			}
 		}
