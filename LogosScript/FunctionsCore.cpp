@@ -60,12 +60,13 @@ void len(SystemFunction *object)
 {
 	Instruction *res = &object->get_result_instruction();
 	const std::vector<Instruction> &instructions = object->get_instructions();
-	
+	const Instruction *ptr = (instructions[0].ptr != nullptr) ? instructions[0].ptr : &instructions[0];
+
 	res->type_of_data = TYPE_OF_DATA::_INT;
-	if (instructions[0].array.size() > 0)
-		res->data = std::to_string(instructions[0].array.size());
-	else if(instructions[0].type_of_data == TYPE_OF_DATA::_STRING)
-		res->data = std::to_string(instructions[0].data.length());
+	if (ptr->array.size() > 0)
+		res->data = std::to_string(ptr->array.size());
+	else if(ptr->type_of_data == TYPE_OF_DATA::_STRING)
+		res->data = std::to_string(ptr->data.length());
 	else
 		res->data = "0";
 }
@@ -627,6 +628,7 @@ void mysql_query(SystemFunction *object)
 		result.array.clear();
 
 		MYSQL_ROW row;
+
 		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
 		
 		int num_of_index = -1;
@@ -642,28 +644,22 @@ void mysql_query(SystemFunction *object)
 			{
 				Instruction new_instruction;
 				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
 
-				if (row[i] != NULL)
-				{
-					new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
-					new_instruction.data = row[i];
+				new_instruction.data = (row[i] != NULL) ? row[i] : "null";
 
-					inst.array_map[fields[++num_of_index].name].data = row[i];
-					inst.array_map[fields[num_of_index].name].type_of_data = TYPE_OF_DATA::_STRING;
-				}
-				else
-				{
-					new_instruction.type_of_data = TYPE_OF_DATA::_NONE;
-					new_instruction.data = "null";
-
-					inst.array_map[fields[++num_of_index].name].data = "null";
-					inst.array_map[fields[num_of_index].name].type_of_data = TYPE_OF_DATA::_STRING;
-				}
-
+				inst.array_map[fields[++num_of_index].name] = new_instruction;
 				inst.array.push_back(new_instruction);
 			}
 			result.array.push_back(inst);
 		}
+	}
+	else
+	{
+		result.type_of_data = TYPE_OF_DATA::_NONE;
+		result.data = "null";
+		result.array.clear();
+		result.array_map.clear();
 	}
 	mysql_free_result(result_of_query);
 
@@ -727,7 +723,10 @@ void del_session(SystemFunction *object)
 
 	object->get_session()->isSessionDelete = true;
 	object->get_session()->all_data.clear();
+	object->get_session()->mysql_connections.clear();
 	object->get_session()->definition_functions.clear();
+	all_user_sessions.erase(object->get_session()->session_key);
+	object->get_session()->redirect_page = object->get_session()->get_file_name();
 }
 
 void del(SystemFunction *object)
@@ -798,10 +797,10 @@ void show_info(SystemFunction *object)
 	}
 
 	if (result.ptr == nullptr)
-		info = "[data: '" + result.data + "', type: '" + type + "', array-size: '" + std::to_string(result.array.size())
+		info = "[body: " + result.body + "', data: '" + result.data + "', type: '" + type + "', array-size: '" + std::to_string(result.array.size())
 		+ "', array_map-size: " + std::to_string(result.array_map.size());
 	else 
-		info = "[data: '" + result.ptr->data + "', type: '" + type + "', array-size: '" + std::to_string(result.ptr->array.size())
+		info = "[body: " + result.ptr->body + "', data: '" + result.ptr->data + "', type: '" + type + "', array-size: '" + std::to_string(result.ptr->array.size())
 		+ "', array_map-size: " + std::to_string(result.ptr->array_map.size());
 
 	result.type_of_data = TYPE_OF_DATA::_STRING;

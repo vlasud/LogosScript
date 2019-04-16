@@ -1,6 +1,13 @@
 <#
+    if(_get["exit"] == 1)
+        del_session()
+
     include("/connect.lgs")
     
+    if(_get["search_text"] != null)
+        search_text = _get["search_text"]
+        redirect("/ads.lgs")
+
     include("/header.lgs")
 
 #>
@@ -20,8 +27,11 @@
                         <option value="Панельные дома">Панельные дома</option>
                     </select>
 -->
-                    <input type="text" placeholder="Поиск по объявлениям">
-                    <input type="submit" value="Найти">
+
+                    <form method = "GET">
+                        <input type="text" name="search_text" placeholder="Поиск по объявлениям">
+                        <input type="submit" value="Найти">
+                    </form>
             </div>
         </div>
         

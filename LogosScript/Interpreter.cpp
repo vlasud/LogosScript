@@ -160,65 +160,72 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 // client_socket - сокет клиента
 // file_id - смещение вектора файлов сайта
 {
-	Page page_object = all_pages[file_id];
-	bool isError = false;
-	bool isScriptFound = false;
-	std::string redirect_page = EMPTY;
-
-	// Получение идентификатора сессии
-	std::string session_key = get_session_id(request);
-
-	unsigned int count_lines_of_file = all_pages[file_id].all_lines.size();
+	Page page_object					= all_pages[file_id];
+	bool isError						= false;
+	bool isScriptFound					= false;
+	std::string redirect_page			= EMPTY;
+	std::string session_key				= EMPTY;
+	unsigned int count_lines_of_file	= all_pages[file_id].all_lines.size();
 
 	for (unsigned register int i = 0; i < count_lines_of_file; i++)
 	{
 		if (page_object.all_lines[i][0] == '<' && page_object.all_lines[i][1] == '#')
 		{
-			for (unsigned register int j = i; j < count_lines_of_file; j++)
+			for (unsigned register int j = i + 1; j < count_lines_of_file; j++)
 			{
 				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
 				{
-					Session session(i + 2, client_socket);
-					session.session_key = session_key;
+					Session session(i + 1, client_socket);
+					// Получение идентификатора сессии
+					session_key = get_session_id(request);
 
-					if (session.session_key != EMPTY)
+					// Если клиент имеет куки с ключом сессии
+					if (session_key != EMPTY)
 					{
+						// Если в памяти уже хранятся данные сессии с таким ключом
+						// Происходит копирование всех данных
 						if (all_user_sessions.find(session_key) != all_user_sessions.end())
 						{
-							session.all_data = all_user_sessions[session_key].all_data;
-							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
-							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
+							session.all_data			= all_user_sessions[session_key].all_data;
+							session.all_data_buffer		= all_user_sessions[session_key].all_data_buffer;
+							session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
 						}
+						// Иначе выделяется память под данную сессию
 						else all_user_sessions[session_key] = session;
 					}
+					// Иначе если в памяти нету сессии с таким ключом
 					else
-					{
-						if (_session->session_key == EMPTY)
+					{ 
+						// Если клиент зашел впервые - генерируется новый ключ сессии
+						if (_session == nullptr || _session == nullptr && _session->session_key == EMPTY)
 							session_key = generate_session_key();
-						else
+						// Если данная функция была вызвана путем команды include (т.к в параметре request будет пусто)
+						// То скопировать все данные сессии из предыдущего вызова данной функции
+						else if(_session != nullptr)
 						{
 							session_key = _session->session_key;
 							session.all_data = all_user_sessions[session_key].all_data;
 							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
 							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
-						}
+						} 
 					}
+					session.session_key = session_key;
+					// Запись названия текущего файла
 					session.set_file_name(page_object.getName());							
 
 					Instruction global_data = parse_global_data(request);
-					// Если GET и POST параметров передано не было
-					if (global_data.body == EMPTY)
-					{
-						std::map<std::string, Instruction>::iterator iter = session.all_data.find("_post");
-						if (iter != session.all_data.end())
-							session.all_data.erase(iter);
-
-						iter = session.all_data.find("_get");
-						if (iter != session.all_data.end())
-							session.all_data.erase(iter);
-					}
-					else
-						session.all_data[global_data.body] = global_data;
+					// Удаление всех данных с именем _post и _get
+					std::map<std::string, Instruction>::iterator iter = session.all_data.find("_post");
+					if (iter != session.all_data.end())
+						session.all_data.erase(iter);
+					iter = session.all_data.find("_get");
+					if (iter != session.all_data.end())
+						session.all_data.erase(iter);
+					// Если были переданы GLOBAL параметры, то записать их
+					if (global_data.body == "_post" && _session == nullptr) session.all_data["_post"] = global_data;
+					else if (global_data.body == "_get" && _session == nullptr) session.all_data["_get"] = global_data;
+					else if (global_data.body == EMPTY) session.all_data[global_data.body] = global_data;
+					all_user_sessions[session_key].all_data = session.all_data;
 
 					if (static_data.size() > 0)
 						session.all_data.insert(static_data.begin(), static_data.end());
@@ -232,6 +239,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 						session.definition_functions = _session->definition_functions;
 					}					
 
+					// Выполнение скрипта
 					read_script(session, page_object, i + 1, j + 1);
 				
 					if (!session.isSessionDelete)
@@ -275,8 +283,6 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					}
 
 					count_lines_of_file = page_object.all_lines.size();
-
-					i = j;
 					break;
 				}
 				if (redirect_page != EMPTY)
@@ -469,6 +475,14 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 	do_script(session);
 }
 
+void reset_data_arrays_on_ptr(Session &session)
+{
+	for (std::map<std::string, Instruction>::iterator iter = session.all_data.begin();
+		iter != session.all_data.end(); iter++)
+	{
+		iter->second.ptr = nullptr;
+	}
+}
 
 void do_script(Session &session)
 // Выполнение скрипта
@@ -488,6 +502,8 @@ void do_script(Session &session)
 
 	for (register unsigned int i = 0; i < session_lines_size; i++)
 	{
+		reset_data_arrays_on_ptr(session);
+
 		// Обновление номера текущей строки в файле
 		session.update_current_line(session.get_start_line() + i);
 
@@ -600,7 +616,7 @@ void do_script(Session &session)
 					else
 					{
 						if (session.all_data.find(session.lines[i].instructions[j].body) == session.all_data.end())
-						{
+						{						
 							session.lines[i].instructions[j].isVariable = true;
 
 							// Если перед переменной стоит модификатор константы
@@ -670,6 +686,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
+		reset_data_arrays_on_ptr(session);
 		// Обновление номера текущей строки в файле
 		session.update_current_line(session.get_start_line() + i);
 

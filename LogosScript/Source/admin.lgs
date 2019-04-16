@@ -1,7 +1,7 @@
 <#
     include("/header.lgs")
 
-    if(local_user_info["access"] != 1)
+    if(is_null(local_user_info))
         redirect("/index.lgs")
 
     if(!is_null(_post))
@@ -11,7 +11,6 @@
             request += _post["name"] + "','" + _post["surname"] + "','" + _post["phone_number"] + "','"
             request += _post["login"] + "','" + _post["password"] + "','" + _post["access"] + "')"
             query(connection, request)
-            del(_post)
             
         if(!is_null(_post["add_realty"]))
             request = null
@@ -19,57 +18,58 @@
             request += _post["r_name"] + "','" + _post["r_number_of_rooms"] + "','" + _post["r_floor"] + "','"
             request += _post["r_address"] + "','" + _post["r_phone_number"] + "','" + _post["r_price"] + "')"
             query(connection, request)
-            del(_post)
 #>
         <div class="logo">
             <img src="img/logo1.png" alt="Логотип">
         </div>
-    
-    <div class="admin_edit">
-        <h2>Информация о аккаунтах</h2>
-        <table class="table">
-            <tr>
-                <th>Имя</th>
-                <th>Фамилия</th>
-                <th>Номер телефона</th>
-                <th>Логин</th>
-                <th>Пароль</th>
-                <th>Уровень доступа</th>    
-            </tr>
-<#
-    
-    result = query(connection, "SELECT * FROM users")
 
-    for(i = 0; i < len(result); i++)
-        text = null
+<#
+    if(local_user_info["access"] == 1)
+        text = "<div class='admin_edit'>"
+        text += "<h2>Информация о аккаунтах</h2>"
+        text += "<table class='table'>"
         text += "<tr>"
-        text += "<td>" + result[i]["name"] + "</td>"
-        text += "<td>" + result[i]["surname"] + "</td>"
-        text += "<td>" + result[i]["phone_number"] + "</td>"
-        text += "<td>" + result[i]["login"] + "</td>"
-        text += "<td>" + result[i]["pass"] + "</td>"
-        text += "<td>" + result[i]["access"] + "</td>"
-        text += "<td class='active'><a href='delete.lgs?id_Client=" + result[i]["idUsers"] + "'>Удалить</a></td>"
-        text += "<td class='active'><a href='edit.lgs?id_Client=" + result[i]["idUsers"] + "'>Редактировать</a></td>"
+        text += "<th>Имя</th>"
+        text += "<th>Фамилия</th>"
+        text += "<th>Номер телефона</th>"
+        text += "<th>Логин</th>"
+        text += "<th>Пароль</th>"
+        text += "<th>Уровень доступа</th>"    
         text += "</tr>"
+
+        del(result)
+        result = query(connection, "SELECT * FROM users")
+
+        for(i = 0; i < len(result); i++)
+            text += "<tr>"
+            text += "<td>" + result[i]["name"] + "</td>"
+            text += "<td>" + result[i]["surname"] + "</td>"
+            text += "<td>" + result[i]["phone_number"] + "</td>"
+            text += "<td>" + result[i]["login"] + "</td>"
+            text += "<td>" + result[i]["pass"] + "</td>"
+            text += "<td>" + result[i]["access"] + "</td>"
+            text += "<td class='active'><a href='delete.lgs?id_Client=" + result[i]["idUsers"] + "'>Удалить</a></td>"
+            text += "<td class='active'><a href='edit.lgs?id_Client=" + result[i]["idUsers"] + "'>Редактировать</a></td>"
+            text += "</tr>"
+
+        text += "</table>"
+        text += "<div class='addPerson'>"
+        text += "<h3>Добавить пользователя</h3>"
+        text += "<form method = 'POST' class='form_add_person'>"
+        text += "<input type='text' name='name' placeholder='Имя'>"
+        text += "<input type='text' name='surname' placeholder='Фамилия'>"
+        text += "<input type='tel' name='phone_number' placeholder='Номер телефона'>"
+        text += "<input type='text' name='login' placeholder='Логин'>"
+        text += "<input type='password' name='password' placeholder='Пароль'>"
+        text += "<input type='number' name='access' placeholder='Уровень доступа'>"
+        text += "<input type='submit' name='add_user' value='Подтвердить'>"
+        text += "<p>Уровень доступа: 1 - Администратор, 2 - обычный работник</p>"
+        text += "</form>"       
+        text += "</div></div>"
         write(text)
 
 #>
-        </table>
-        <div class="addPerson">
-            <h3>Добавить пользователя</h3>
-            <form method = "POST" class="form_add_person">
-                <input type="text" name="name" placeholder="Имя">
-                <input type="text" name="surname" placeholder="Фамилия">
-                <input type="tel" name="phone_number" placeholder="Номер телефона">
-                <input type="text" name="login" placeholder="Логин">
-                <input type="password" name="password" placeholder="Пароль">
-                <input type="number" name="access" placeholder="Уровень доступа">
-                <input type="submit" name="add_user" value="Подтвердить">
-                <p>Уровень доступа: 1 - Администратор, 2 - обычный работник</p>
-            </form>        
-        </div>
-    </div>
+    
     
     
     
@@ -88,6 +88,7 @@
             </tr>
 <#
     
+    del(result)
     result = query(connection, "SELECT * FROM realty")
 
     for(i = 0; i < len(result); i++)
