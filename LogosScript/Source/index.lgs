@@ -19,16 +19,7 @@
         
         <div class="container">
             <div class="search">
-<!--
-                   <select name="Тип дома" id="">
-                        <option value="Монолитные дома">Монолитные дома</option>
-                        <option value="Монолитно-кирпичные дома">Монолитно-кирпичные дома</option>
-                        <option value="Кирпичные дома">Кирпичные дома</option>
-                        <option value="Панельные дома">Панельные дома</option>
-                    </select>
--->
-
-                    <form method = "GET">
+                    <form method = "GET" class="form_search">
                         <input type="text" name="search_text" placeholder="Поиск по объявлениям">
                         <input type="submit" value="Найти">
                     </form>

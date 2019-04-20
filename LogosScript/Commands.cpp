@@ -66,7 +66,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 			}
 			else if (temp.body == "else")
 			{
-				if ((session.last_command == "if") && session.last_command_success == true) break;
+				if ((session.last_command == "if") && session.last_command_success) break;
 
 				int begin_new = -1;
 				int end_new = -1;

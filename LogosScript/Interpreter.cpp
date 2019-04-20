@@ -32,6 +32,7 @@ Instruction parse_global_data(const std::string request)
 					else if (request[j] == '&' || request[j] == ' ')
 					{
 						Instruction tmp;
+						tmp.selected_char = -1;
 						tmp.type_of_data = TYPE_OF_DATA::_STRING;
 						tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 						tmp.data = data;
@@ -45,6 +46,7 @@ Instruction parse_global_data(const std::string request)
 					}
 					else data += request[j];
 				}
+				break;
 			}
 		}
 	}
@@ -71,6 +73,7 @@ Instruction parse_global_data(const std::string request)
 						else if (request[j] == '&' || request[j] == '\0' || j == request.length() - 1)
 						{
 							Instruction tmp;
+							tmp.selected_char = -1;
 							tmp.type_of_data = TYPE_OF_DATA::_STRING;
 							tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 							tmp.data = data;
@@ -91,6 +94,10 @@ Instruction parse_global_data(const std::string request)
 			}
 			else data += request[i];
 		}
+	}
+	if (result.array_map.size() == 1)
+	{
+		result.data = EMPTY;
 	}
 	return result;
 }

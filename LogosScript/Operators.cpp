@@ -72,11 +72,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 										new_null_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 										parent->data = "null";
 										parent->type_of_data = TYPE_OF_DATA::_NONE;
+										parent->selected_char = -1;
 
 										// Заполнение массива новыми инструкциями
 										for (register unsigned counter = temp->array.size(); counter <= bias; counter++)
 											temp->array.push_back(new_null_instruction);
-
+									
 										// Установка указателя на последний элемент массива
 										parent->ptr = &temp->array[temp->array.size() - 1];
 									}
@@ -87,6 +88,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 									parent->ptr = &temp->array[bias];
 									parent->data = temp->array[bias].data;
 									parent->type_of_data = temp->array[bias].type_of_data;
+									parent->selected_char = -1;
 								}
 							}
 							// Если смещение по строке
@@ -100,12 +102,13 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 									Instruction new_null_instruction;
 									new_null_instruction.data = "null";
 									new_null_instruction.ptr = nullptr;
+									new_null_instruction.selected_char = -1;
 									new_null_instruction.type_of_data = TYPE_OF_DATA::_NONE;
 									new_null_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 
 									temp->array_map[bias] = new_null_instruction;
 								}
-
+								parent->selected_char = -1;
 								parent->data = temp->array_map[bias].data;
 								parent->type_of_data = temp->array_map[bias].type_of_data;
 								parent->ptr = &temp->array_map[bias];
@@ -130,6 +133,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			else last_ptr = nullptr;
 		}
 	}
+
 
 	// Операторы первого уровня [(, ), ++, --, -]
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
@@ -1683,7 +1687,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "true";
+						session.lines[line].instructions[i - 1].data = "false";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 						break;
 					}
@@ -1863,7 +1867,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						if(session.lines[line].instructions[i + 1].data == "null")
+						if(session.lines[line].instructions[i - 1].data == "null")
 							session.lines[line].instructions[i - 1].data = "true";
 						else 
 							session.lines[line].instructions[i - 1].data = "false";
@@ -3063,48 +3067,41 @@ int parse_array_brackets(Session &session, const unsigned int line, const unsign
 void write_data_from_local_to_global(Session &session, Instruction &first, Instruction &second)
 // Запись данных из кэша в глабольную переменную
 {
-	if (first.isConst && first.type_of_data != TYPE_OF_DATA::_NONE)
+	Instruction *to		= (first.ptr != nullptr && (first.array.size() > 0 || first.array_map.size() > 0)) ? first.ptr : &first;
+	Instruction *from	= (second.ptr != nullptr && (second.array.size() > 0 || second.array_map.size() > 0)) ? second.ptr : &second;
+
+	if (to->isConst && to->type_of_data != TYPE_OF_DATA::_NONE)
 	{
+		if (to->data == from->data) return;
+
 		// Ошибка. Константу нельзя изменять
 		session.error = new ErrorCore("constant not subject to change", &session);
 		return;
 	}
 
-	if (first.selected_char > -1)
-		session.all_data.find(first.body)->second.data[first.selected_char] = second.data[0];
-	// Если это не массив
-	else if (first.ptr == nullptr)
-	{ 
-		session.all_data.find(first.body)->second.data = second.data;
-		session.all_data.find(first.body)->second.type_of_data = second.type_of_data;
-	}
+	if (to->selected_char > -1)
+		to->data[to->selected_char] = from->data[0];
 	else
-	{
-		first.ptr->data = second.data;
-		first.ptr->type_of_data = second.type_of_data;
-
-		session.all_data.find(first.body)->second = first;
-		session.all_data.find(first.body)->second.ptr = nullptr;
+	{ 
+		to->data				= from->data;
+		to->type_of_data		= from->type_of_data;
 	}
 
-	if (second.array.size() > 0 && second.ptr == nullptr)
+	if (from->array.size() > 0 && second.ptr == nullptr)
 	{
-		session.all_data.find(first.body)->second.array = second.array;
-		first.array = second.array;
+		to->array			= from->array;
 	}
-	if (second.array_map.size() > 0 && second.ptr == nullptr)
+	if (from->array_map.size() > 0 && second.ptr == nullptr)
 	{
-		session.all_data.find(first.body)->second.array_map = second.array_map;
-		first.array_map = second.array_map;
+		to->array_map = from->array_map;
 	}
 
-	first.data = second.data;
-	first.type_of_data = second.type_of_data;
-
-	first.ptr = nullptr;
 	second.ptr = nullptr;
+	first.ptr = nullptr;
+
+	session.all_data.find(first.body)->second = first;
 
 	// Если данные - статические
 	if (first.isStatic)
-		static_data[first.body] = first;
+		static_data[first.body] = *to;
 }

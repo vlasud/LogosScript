@@ -1,5 +1,5 @@
 <#
 
-	del(_get)
-
+	fun say()
+		writeln("Hello")
 #>

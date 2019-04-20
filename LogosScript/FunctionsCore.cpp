@@ -393,21 +393,23 @@ void __int(SystemFunction *object)
 	const std::vector<Instruction> &instructions = object->get_instructions();
 	Instruction result = instructions[0];
 
-	switch (result .type_of_data)
+	Instruction *ptr = (result.ptr == nullptr) ? &result : result.ptr;
+
+	switch (ptr->type_of_data)
 	{
 	case TYPE_OF_DATA::_BOOLEAN:
-		result.data = (result.data == "true") ? "1" : "0";
+		ptr->data = (ptr->data == "true") ? "1" : "0";
 		break;
 	case TYPE_OF_DATA::_DOUBLE:
-		result.data = std::to_string((int)atof(result.data.c_str()));
+		ptr->data = std::to_string((int)atof(ptr->data.c_str()));
 		break;
 	case TYPE_OF_DATA::_STRING:
 	{
 		int res_int = 0;
-		for (register u_int i = 0; i < result.data.length() && result.data[i] >= '0' && result.data[i] <= '9'; i++)
-			res_int = res_int * 10 + (result.data[i] - (int)'0');
+		for (register u_int i = 0; i < ptr->data.length() && ptr->data[i] >= '0' && ptr->data[i] <= '9'; i++)
+			res_int = res_int * 10 + (ptr->data[i] - (int)'0');
 
-		result.data = std::to_string(res_int);
+		ptr->data = std::to_string(res_int);
 		break;
 	}
 	case TYPE_OF_DATA::_NONE:
@@ -416,8 +418,8 @@ void __int(SystemFunction *object)
 		return;
 		break;
 	}
-	result.type_of_data = TYPE_OF_DATA::_INT;
-	*res = result;
+	ptr->type_of_data = TYPE_OF_DATA::_INT;
+	*res = *ptr;
 }
 
 void __double(SystemFunction *object)
@@ -723,7 +725,7 @@ void del_session(SystemFunction *object)
 
 	object->get_session()->isSessionDelete = true;
 	object->get_session()->all_data.clear();
-	object->get_session()->mysql_connections.clear();
+	//object->get_session()->mysql_connections.clear();
 	object->get_session()->definition_functions.clear();
 	all_user_sessions.erase(object->get_session()->session_key);
 	object->get_session()->redirect_page = object->get_session()->get_file_name();
@@ -835,6 +837,47 @@ void redirect(SystemFunction *object)
 			return;
 		}
 	}
+
+	*res = result;
+}
+
+void roundup(SystemFunction *object)
+// Округление вверх
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+	
+	if (result.type_of_data != TYPE_OF_DATA::_DOUBLE)
+	{
+		// Синтаксическая ошибка. Принимает только массив или строку
+		object->get_session()->error = new ErrorCore("function accepts double only", object->get_session());
+		return;
+	}
+	result.data = std::to_string(ceil(atof(result.data.c_str())));
+
+	*res = result;
+}
+
+void abs(SystemFunction *object)
+// Округление вверх
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	if (result.type_of_data != TYPE_OF_DATA::_DOUBLE && result.type_of_data != TYPE_OF_DATA::_INT)
+	{
+		// Синтаксическая ошибка. Принимает только массив или строку
+		object->get_session()->error = new ErrorCore("function accepts double/int only", object->get_session());
+		return;
+	}
+	if (result.data[0] == '-')
+		result.data.erase(0, 1);
 
 	*res = result;
 }

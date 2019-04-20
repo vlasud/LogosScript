@@ -74,6 +74,10 @@ void del(SystemFunction *object);
 void show_info(SystemFunction *object);
 // Перенаправление на другую страницу
 void redirect(SystemFunction *object);
+// Округление вверх
+void roundup(SystemFunction *object);
+// Возвдедение в абсолютную велечину
+void abs(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
@@ -104,4 +108,6 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"del", 1, del},
 	SystemFunction {"show_info", 1, show_info},
 	SystemFunction {"redirect", 1, redirect},
+	SystemFunction {"roundup", 1, roundup},
+	SystemFunction {"abs", 1, abs},
 };

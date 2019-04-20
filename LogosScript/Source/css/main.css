@@ -563,12 +563,6 @@ a{
     
     color: black;
     
-    display: grid;
-    grid-template-columns: 1fr 200px;
-    grid-template-rows: 40px;
-    grid-column-gap: 10px;
-    
-    align-content: center;
     
     
     padding: 0 10px;
@@ -587,7 +581,20 @@ a{
 }
 */
 
-.search input{
+.form_search{
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    grid-template-rows: 40px;
+    grid-column-gap: 10px;
+    
+    align-content: center;
+
+    margin:0;
+    padding-top: 5px;
+}
+
+
+.search form input{
     border-radius: 5px;
     outline: none;
     border: none;
@@ -595,13 +602,13 @@ a{
     
 }
 
-.search input[type="text"]{
+.search form input[type="text"]{
     border-radius: 5px;
     padding-left: 10px;
     font-size: 18px;
 }
 
-.search input[type="text"]:hover{
+.search form input[type="text"]:hover{
     border-radius: 5px;
     padding-left: 10px;
     font-size: 18px;
@@ -611,7 +618,7 @@ a{
     border: 2px solid rgba(255,176,32,.3);
 }
 
-.search input[type="text"]:focus{
+.search form input[type="text"]:focus{
     border-radius: 5px;
     padding-left: 10px;
     font-size: 18px;
@@ -621,13 +628,13 @@ a{
     border: 2px solid #f39100;
 }
 
-.search input[type="submit"]{
+.search form input[type="submit"]{
     border-radius: 5px;
     font-size: 18px;
     background: white;
 }
 
-.search input[type="submit"]:hover{
+.search form input[type="submit"]:hover{
     background: #ccc;
     cursor: pointer;
 }
@@ -643,7 +650,7 @@ a{
     
     grid-row-gap: 30px;
 
-    
+    place-items:center;
     
     margin-top: 100px;
     margin-bottom: 100px;
@@ -1305,6 +1312,7 @@ a{
     color: white;
     width: 100%;
     margin-bottom: 30px;
+    margin-left: 50px;
     
     border-collapse: collapse; 
     
@@ -1313,7 +1321,7 @@ a{
 
 
 td,th{
-    font-size: 16px;
+    font-size: 18px;
     border: 1px solid chocolate;
 
 }
@@ -1620,9 +1628,10 @@ td,th{
     
 
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 50%;
     grid-template-rows: 50px auto;
     place-items: center;
+    place-content:center;
     grid-row-gap: 40px;
 }
 
