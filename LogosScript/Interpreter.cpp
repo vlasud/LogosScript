@@ -163,6 +163,8 @@ std::string generate_session_key(void)
 	return key;
 }
 
+
+
 void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session *_session)
 // client_socket - сокет клиента
 // file_id - смещение вектора файлов сайта
@@ -195,7 +197,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 						{
 							session.all_data			= all_user_sessions[session_key].all_data;
 							session.all_data_buffer		= all_user_sessions[session_key].all_data_buffer;
-							session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
+							//session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
 						}
 						// Иначе выделяется память под данную сессию
 						else all_user_sessions[session_key] = session;
@@ -205,7 +207,9 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					{ 
 						// Если клиент зашел впервые - генерируется новый ключ сессии
 						if (_session == nullptr || _session == nullptr && _session->session_key == EMPTY)
+						{
 							session_key = generate_session_key();
+						}
 						// Если данная функция была вызвана путем команды include (т.к в параметре request будет пусто)
 						// То скопировать все данные сессии из предыдущего вызова данной функции
 						else if(_session != nullptr)
@@ -213,7 +217,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 							session_key = _session->session_key;
 							session.all_data = all_user_sessions[session_key].all_data;
 							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
-							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
+							//session.mysql_connections = all_user_sessions[session_key].mysql_connections;
 						} 
 					}
 					session.session_key = session_key;
@@ -234,13 +238,14 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					else if (global_data.body == EMPTY) session.all_data[global_data.body] = global_data;
 					all_user_sessions[session_key].all_data = session.all_data;
 
+					// Если существуют статические данные, то скопировать их в текущую сессию
 					if (static_data.size() > 0)
 						session.all_data.insert(static_data.begin(), static_data.end());
 
 					// Копирование всех данных если была вызвана функция include
 					if (_session != nullptr)
 					{
-						session.mysql_connections = _session->mysql_connections;
+						//session.mysql_connections = _session->mysql_connections;
 						session.all_data = _session->all_data;
 						session.all_data_buffer = _session->all_data_buffer;
 						session.definition_functions = _session->definition_functions;
@@ -279,7 +284,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 						// Копирование всех данных если была вызвана функция include
 						if (_session != nullptr)
 						{
-							_session->mysql_connections = session.mysql_connections;
+							//_session->mysql_connections = session.mysql_connections;
 							_session->all_data = session.all_data;
 							_session->all_data_buffer = session.all_data_buffer;
 							_session->definition_functions = session.definition_functions;
@@ -548,10 +553,7 @@ void do_script(Session &session)
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 								{
-									tmp->parametrs[++param_counter].data = session.lines[i].instructions[z].data;
-									tmp->parametrs[param_counter].type_of_data = session.lines[i].instructions[z].type_of_data;
-									tmp->parametrs[param_counter].array = session.lines[i].instructions[z].array;
-									tmp->parametrs[param_counter].array_map = session.lines[i].instructions[z].array_map;
+									tmp->parametrs[++param_counter] = session.lines[i].instructions[z];
 								}
 
 							do_script(session, tmp->begin, tmp->end, false, tmp);
@@ -594,18 +596,22 @@ void do_script(Session &session)
 											break;
 										}
 									}
-									while(session.lines[i].instructions.size() > 1 && param_counter > 0)
+									u_int _param_counter = 1 + (param_counter + param_counter - 1);
+									for(u_int idx = 0; idx < _param_counter && session.lines[i].instructions.size() > 1; idx++)
 									{
-										if (session.lines[i].instructions[j + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+										if (session.lines[i].instructions[j + 1 + idx].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 										{
-											tmp.set_params(session.lines[i].instructions[j + 1]);
-											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
-											param_counter--;
+											tmp.set_params(session.lines[i].instructions[j + 1 + idx]);
 										}
-										else session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
 									}
 
 									tmp.start_function(&session);
+
+									while (_param_counter > 0)
+									{
+										session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+										_param_counter--;
+									}
 
 									session.lines[i].instructions[j] = tmp.get_result();
 									break;
@@ -745,10 +751,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 								{
-									tmp->parametrs[++param_counter].data = session.lines[i].instructions[z].data;
-									tmp->parametrs[param_counter].type_of_data = session.lines[i].instructions[z].type_of_data;
-									tmp->parametrs[param_counter].array = session.lines[i].instructions[z].array;
-									tmp->parametrs[param_counter].array_map = session.lines[i].instructions[z].array_map;
+									tmp->parametrs[++param_counter] = session.lines[i].instructions[z];
 								}
 
 							do_script(session, tmp->begin, tmp->end, false, tmp);
@@ -793,18 +796,22 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 											break;
 										}
 									}
-									while (session.lines[i].instructions.size() > 1 && param_counter > 0)
+									u_int _param_counter = 1 + (param_counter + param_counter - 1);
+									for (u_int idx = 0; idx < _param_counter && session.lines[i].instructions.size() > 1; idx++)
 									{
-										if (session.lines[i].instructions[j + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
+										if (session.lines[i].instructions[j + 1 + idx].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 										{
-											tmp.set_params(session.lines[i].instructions[j + 1]);
-											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
-											param_counter--;
+											tmp.set_params(session.lines[i].instructions[j + 1 + idx]);
 										}
-										else session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
 									}
 
 									tmp.start_function(&session);
+
+									while (_param_counter > 0)
+									{
+										session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+										_param_counter--;
+									}
 
 									session.lines[i].instructions[j] = tmp.get_result();
 									break;

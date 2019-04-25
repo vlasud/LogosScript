@@ -24,6 +24,13 @@ void SystemFunction::start_function(Session *session)
 	}
 	this->session = session;
 
+	// ≈сли были переданы элементы массива, то переопределить их как обычные переменные
+	for (u_int i = 0; i < this->instructions_of_function.size(); i++)
+	{
+		if (this->instructions_of_function[i].ptr != nullptr)
+			this->instructions_of_function[i] = *this->instructions_of_function[i].ptr;
+	}
+
 	this->ptr_on_function(this);
 }
 
@@ -63,6 +70,7 @@ void len(SystemFunction *object)
 	const Instruction *ptr = (instructions[0].ptr != nullptr) ? instructions[0].ptr : &instructions[0];
 
 	res->type_of_data = TYPE_OF_DATA::_INT;
+	res->ptr = nullptr;
 	if (ptr->array.size() > 0)
 		res->data = std::to_string(ptr->array.size());
 	else if(ptr->type_of_data == TYPE_OF_DATA::_STRING)
@@ -540,133 +548,133 @@ void typeof(SystemFunction *object)
 	*res = result;
 }
 
-void mysql_connect(SystemFunction *object)
-// —оединение с базой данных MySQL
-// 4 параметра
-// [хост, им€ базы, пользователь, пароль]
-{
-	Instruction *res = &object->get_result_instruction();
-	const std::vector<Instruction> &instructions = object->get_instructions();
-	Instruction result = instructions[0];
-
-	MySQL *new_mysql_connection = new MySQL();
-
-	mysql_init(&new_mysql_connection->mysql_init);
-	new_mysql_connection->connection = mysql_real_connect(&new_mysql_connection->mysql_init, instructions[0].data.c_str(), instructions[2].data.c_str(),
-		instructions[3].data.c_str(), instructions[1].data.c_str(), 3306, 0, 0);
-
-	// ≈сли не удалось соединитьс€ с базой данных
-	if (new_mysql_connection->connection == NULL)
-	{
-		object->get_session()->error = new ErrorCore(mysql_error(new_mysql_connection->connection), object->get_session());
-		return;
-	}
-
-	object->get_session()->mysql_connections.push_back(new_mysql_connection);
-
-	result.type_of_data = TYPE_OF_DATA::_INT;
-	result.data = std::to_string(object->get_session()->mysql_connections.size() - 1);
-
-	*res = result;
-}
-
-void mysql_close(SystemFunction *object)
-// ѕрерывает соединение с базой данных MySQL
-// 1 параметр
-// [id соединени€]
-{
-	Instruction *res = &object->get_result_instruction();
-	const std::vector<Instruction> &instructions = object->get_instructions();
-	Instruction result = instructions[0];
-
-	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
-	mysql_close(connection->connection);
-
-	delete(object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())]);
-	object->get_session()->mysql_connections.erase(object->get_session()->mysql_connections.begin() + atoi(instructions[0].data.c_str()));
-
-	if (result.isStatic)
-	{
-		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
-		return;
-	}
-	object->get_session()->all_data.erase(result.body);
-	if (object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
-		object->get_session()->all_data_buffer.erase(result.body);
-
-	if (result.isStatic)
-	{
-		if (static_data.find(result.body) != static_data.end())
-			static_data.erase(result.body);
-	}
-
-
-	*res = result;
-}
-
-void mysql_query(SystemFunction *object)
-// ѕосылает запрос к базе данных
-// 2 параметра
-// [id соединени€, запрос]
-{
-	Instruction *res = &object->get_result_instruction();
-	const std::vector<Instruction> &instructions = object->get_instructions();
-	Instruction result = instructions[0];
-
-	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
-	
-	int state_of_query = mysql_query(connection->connection, instructions[1].data.c_str());
-
-	// ≈сли произошла ошибка в заросе
-	if (state_of_query != 0)
-	{
-		object->get_session()->error = new ErrorCore(mysql_error(connection->connection), object->get_session());
-		return;
-	}
-
-	MYSQL_RES *result_of_query = mysql_store_result(connection->connection);
-	if (result_of_query != nullptr && mysql_num_rows(result_of_query) > 0)
-	{
-		result.array.clear();
-
-		MYSQL_ROW row;
-
-		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
-		
-		int num_of_index = -1;
-
-		while ((row = mysql_fetch_row(result_of_query)) != NULL)
-		{
-			num_of_index = -1;
-			Instruction inst;
-			inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-			inst.type_of_data = TYPE_OF_DATA::_STRING;
-
-			for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
-			{
-				Instruction new_instruction;
-				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
-
-				new_instruction.data = (row[i] != NULL) ? row[i] : "null";
-
-				inst.array_map[fields[++num_of_index].name] = new_instruction;
-				inst.array.push_back(new_instruction);
-			}
-			result.array.push_back(inst);
-		}
-	}
-	else
-	{
-		result.type_of_data = TYPE_OF_DATA::_NONE;
-		result.data = "null";
-		result.array.clear();
-		result.array_map.clear();
-	}
-	mysql_free_result(result_of_query);
-
-	*res = result;
-}
+//void mysql_connect(SystemFunction *object)
+//// —оединение с базой данных MySQL
+//// 4 параметра
+//// [хост, им€ базы, пользователь, пароль]
+//{
+//	Instruction *res = &object->get_result_instruction();
+//	const std::vector<Instruction> &instructions = object->get_instructions();
+//	Instruction result = instructions[0];
+//
+//	MySQL *new_mysql_connection = new MySQL();
+//
+//	mysql_init(&new_mysql_connection->mysql_init);
+//	new_mysql_connection->connection = mysql_real_connect(&new_mysql_connection->mysql_init, instructions[0].data.c_str(), instructions[2].data.c_str(),
+//		instructions[3].data.c_str(), instructions[1].data.c_str(), 3306, 0, 0);
+//
+//	// ≈сли не удалось соединитьс€ с базой данных
+//	if (new_mysql_connection->connection == NULL)
+//	{
+//		object->get_session()->error = new ErrorCore(mysql_error(new_mysql_connection->connection), object->get_session());
+//		return;
+//	}
+//
+//	object->get_session()->mysql_connections.push_back(new_mysql_connection);
+//
+//	result.type_of_data = TYPE_OF_DATA::_INT;
+//	result.data = std::to_string(object->get_session()->mysql_connections.size() - 1);
+//
+//	*res = result;
+//}
+//
+//void mysql_close(SystemFunction *object)
+//// ѕрерывает соединение с базой данных MySQL
+//// 1 параметр
+//// [id соединени€]
+//{
+//	Instruction *res = &object->get_result_instruction();
+//	const std::vector<Instruction> &instructions = object->get_instructions();
+//	Instruction result = instructions[0];
+//
+//	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
+//	mysql_close(connection->connection);
+//
+//	delete(object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())]);
+//	object->get_session()->mysql_connections.erase(object->get_session()->mysql_connections.begin() + atoi(instructions[0].data.c_str()));
+//
+//	if (result.isStatic)
+//	{
+//		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
+//		return;
+//	}
+//	object->get_session()->all_data.erase(result.body);
+//	if (object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
+//		object->get_session()->all_data_buffer.erase(result.body);
+//
+//	if (result.isStatic)
+//	{
+//		if (static_data.find(result.body) != static_data.end())
+//			static_data.erase(result.body);
+//	}
+//
+//
+//	*res = result;
+//}
+//
+//void mysql_query(SystemFunction *object)
+//// ѕосылает запрос к базе данных
+//// 2 параметра
+//// [id соединени€, запрос]
+//{
+//	Instruction *res = &object->get_result_instruction();
+//	const std::vector<Instruction> &instructions = object->get_instructions();
+//	Instruction result = instructions[0];
+//
+//	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
+//	
+//	int state_of_query = mysql_query(connection->connection, instructions[1].data.c_str());
+//
+//	// ≈сли произошла ошибка в заросе
+//	if (state_of_query != 0)
+//	{
+//		object->get_session()->error = new ErrorCore(mysql_error(connection->connection), object->get_session());
+//		return;
+//	}
+//
+//	MYSQL_RES *result_of_query = mysql_store_result(connection->connection);
+//	if (result_of_query != nullptr && mysql_num_rows(result_of_query) > 0)
+//	{
+//		result.array.clear();
+//
+//		MYSQL_ROW row;
+//
+//		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
+//		
+//		int num_of_index = -1;
+//
+//		while ((row = mysql_fetch_row(result_of_query)) != NULL)
+//		{
+//			num_of_index = -1;
+//			Instruction inst;
+//			inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+//			inst.type_of_data = TYPE_OF_DATA::_STRING;
+//
+//			for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
+//			{
+//				Instruction new_instruction;
+//				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+//				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
+//
+//				new_instruction.data = (row[i] != NULL) ? row[i] : "null";
+//
+//				inst.array_map[fields[++num_of_index].name] = new_instruction;
+//				inst.array.push_back(new_instruction);
+//			}
+//			result.array.push_back(inst);
+//		}
+//	}
+//	else
+//	{
+//		result.type_of_data = TYPE_OF_DATA::_NONE;
+//		result.data = "null";
+//		result.array.clear();
+//		result.array_map.clear();
+//	}
+//	mysql_free_result(result_of_query);
+//
+//	*res = result;
+//}
 
 void include(SystemFunction *object)
 // ѕереход на другой документ
@@ -740,30 +748,50 @@ void del(SystemFunction *object)
 	const std::vector<Instruction> &instructions = object->get_instructions();
 	Instruction result = instructions[0];
 
-	if (result.isStatic)
+	if (object->get_session()->all_data.find(result.body) != object->get_session()->all_data.end())
 	{
-		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
+		if (result.isStatic)
+		{
+			object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
+			return;
+		}
+
+		object->get_session()->all_data.erase(result.body);
+		if (object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
+			object->get_session()->all_data_buffer.erase(result.body);
+
+		all_user_sessions[object->get_session()->session_key].all_data.erase(result.body);
+
+		result.array.clear();
+		result.array_map.clear();
+		result.data = "null";
+		result.body = "";
+		result.type_of_data = TYPE_OF_DATA::_NONE;
+		result.ptr = nullptr;
+		*res = result;
+	}
+	else
+	{
+		object->get_session()->error = new ErrorCore("only parents can be deleted", object->get_session());
 		return;
 	}
+}
 
-	object->get_session()->all_data.erase(result.body);
-	if(object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
-		object->get_session()->all_data_buffer.erase(result.body);
-
-	all_user_sessions[object->get_session()->session_key].all_data.erase(result.body);
-
-	if (result.isStatic)
-	{
-		if (static_data.find(result.body) != static_data.end())
-			static_data.erase(result.body);
-	}
+void clear_array(SystemFunction *object)
+// ”дал€ет массив
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
 
 	result.array.clear();
-	result.array_map.clear();
-	result.data = "null";
-	result.body = "";
-	result.type_of_data = TYPE_OF_DATA::_NONE;
 	result.ptr = nullptr;
+
+	object->get_session()->all_data[result.body] = result;
+	all_user_sessions[object->get_session()->session_key].all_data[result.body] = result;
+
 	*res = result;
 }
 

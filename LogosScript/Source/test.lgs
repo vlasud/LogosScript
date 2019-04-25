@@ -1,9 +1,13 @@
 <#
 	
-	a["asd"] = "123"
-	b = a["asd"]
-	writeln(show_info(int(b)))
+	x = 8
+	y = 1
+	pos = x / 2
 
-	writeln(show_info(int(a["asd"])))
+	for(i = 0; i < y; i++)
+		line[pos] = 1
+		end = pos
+
+	
 
 #>

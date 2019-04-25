@@ -70,6 +70,8 @@ void is_null(SystemFunction *object);
 void del_session(SystemFunction *object);
 // Удаляет объект
 void del(SystemFunction *object);
+// Очищает массив
+void clear_array(SystemFunction *object);
 // Показывает всю информацию об объекте
 void show_info(SystemFunction *object);
 // Перенаправление на другую страницу
@@ -99,13 +101,14 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"bool", 1, __bool},
 	SystemFunction {"str", 1, __str},
 	SystemFunction {"typeof", 1, typeof},
-	SystemFunction {"connect", 4, mysql_connect},
+	/*SystemFunction {"connect", 4, mysql_connect},
 	SystemFunction {"close", 1, mysql_close},
-	SystemFunction {"query", 2, mysql_query},
+	SystemFunction {"query", 2, mysql_query},*/
 	SystemFunction {"include", 1, include},
 	SystemFunction {"is_null", 1, is_null},
 	SystemFunction {"del_session", 0, del_session},
 	SystemFunction {"del", 1, del},
+	SystemFunction {"clear_array", 1, clear_array},
 	SystemFunction {"show_info", 1, show_info},
 	SystemFunction {"redirect", 1, redirect},
 	SystemFunction {"roundup", 1, roundup},
