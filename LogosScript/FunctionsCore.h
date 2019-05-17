@@ -17,6 +17,7 @@ public:
 	Session *get_session(void);
 	void start_function(Session *session);
 	void set_params(Instruction &parametr);
+	u_int get_count_of_params(void) const;
 };
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,9 +102,9 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"bool", 1, __bool},
 	SystemFunction {"str", 1, __str},
 	SystemFunction {"typeof", 1, typeof},
-	/*SystemFunction {"connect", 4, mysql_connect},
+	SystemFunction {"connect", 4, mysql_connect},
 	SystemFunction {"close", 1, mysql_close},
-	SystemFunction {"query", 2, mysql_query},*/
+	SystemFunction {"query", 2, mysql_query},
 	SystemFunction {"include", 1, include},
 	SystemFunction {"is_null", 1, is_null},
 	SystemFunction {"del_session", 0, del_session},

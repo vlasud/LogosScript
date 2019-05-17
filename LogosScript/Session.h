@@ -17,7 +17,7 @@ public:
 	std::map<std::string, Instruction> all_data_buffer;
 
 	// Вектор активных MySQL соединений
-	//std::vector<MySQL*> mysql_connections;
+	std::vector<MySQL*> mysql_connections;
 
 	// Последняя выполненая команда
 	std::string last_command;

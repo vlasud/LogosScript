@@ -39,7 +39,14 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							if (session.lines[line].instructions[s].type_of_data == TYPE_OF_DATA::_INT)
 							{
 								// Смещение
-								size_t bias = atoi(session.lines[line].instructions[s].data.c_str());
+								int bias = atoi(session.lines[line].instructions[s].data.c_str());
+
+								if (bias < 0)
+								{
+									// Синтаксическая ошибка...
+									session.error = new ErrorCore("offset must be a positive number", &session);
+									return;
+								}
 
 								// Если число выходит за пределы массива
 								if (bias >= temp->array.size())

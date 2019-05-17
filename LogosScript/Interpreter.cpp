@@ -197,7 +197,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 						{
 							session.all_data			= all_user_sessions[session_key].all_data;
 							session.all_data_buffer		= all_user_sessions[session_key].all_data_buffer;
-							//session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
+							session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
 						}
 						// Иначе выделяется память под данную сессию
 						else all_user_sessions[session_key] = session;
@@ -217,7 +217,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 							session_key = _session->session_key;
 							session.all_data = all_user_sessions[session_key].all_data;
 							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
-							//session.mysql_connections = all_user_sessions[session_key].mysql_connections;
+							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
 						} 
 					}
 					session.session_key = session_key;
@@ -245,7 +245,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 					// Копирование всех данных если была вызвана функция include
 					if (_session != nullptr)
 					{
-						//session.mysql_connections = _session->mysql_connections;
+						session.mysql_connections = _session->mysql_connections;
 						session.all_data = _session->all_data;
 						session.all_data_buffer = _session->all_data_buffer;
 						session.definition_functions = _session->definition_functions;
@@ -284,7 +284,7 @@ void interpreter_start(const SOCKET client_socket, const int file_id, const std:
 						// Копирование всех данных если была вызвана функция include
 						if (_session != nullptr)
 						{
-							//_session->mysql_connections = session.mysql_connections;
+							_session->mysql_connections = session.mysql_connections;
 							_session->all_data = session.all_data;
 							_session->all_data_buffer = session.all_data_buffer;
 							_session->definition_functions = session.definition_functions;
@@ -606,7 +606,7 @@ void do_script(Session &session)
 									}
 
 									tmp.start_function(&session);
-
+									if (tmp.get_count_of_params() == 0) _param_counter = 0;
 									while (_param_counter > 0)
 									{
 										session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
@@ -806,6 +806,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 									}
 
 									tmp.start_function(&session);
+									if (tmp.get_count_of_params() == 0) _param_counter = 0;
 
 									while (_param_counter > 0)
 									{
@@ -851,7 +852,6 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 				else
 				{
 					session.lines[i].instructions[j].isVariable = false;
-					//session.lines[i].instructions[j].data = session.lines[i].instructions[j].body;
 				}
 			}
 		}

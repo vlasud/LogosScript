@@ -2,11 +2,7 @@
     if(_get["exit"] == 1)
         del_session()
 
-    include("/connect.lgs")
-    
-    if(_get["search_text"] != null)
-        search_text = _get["search_text"]
-        redirect("/ads.lgs")
+    include("/connect.lgs")   
 
     include("/header.lgs")
 
@@ -19,7 +15,7 @@
         
         <div class="container">
             <div class="search">
-                    <form method = "GET" class="form_search">
+                    <form method = "GET" class="form_search" action="ads.lgs">
                         <input type="text" name="search_text" placeholder="Поиск по объявлениям">
                         <input type="submit" value="Найти">
                     </form>
@@ -31,8 +27,9 @@
             <div class="ads">
                <h2>Новые объявления</h2>
 <#  
-    realty_array = query(connection, "SELECT * FROM realty ORDER BY idRealty DESC LIMIT 6")    
-    for(i = 0; i < len(realty_array); i++)
+    clear_array(realty_array)
+    realty_array = query(connection, "SELECT * FROM realty ORDER BY idRealty DESC")    
+    for(i = 0; i < 6 && i < len(realty_array); i++)
         text = null
         text += "<div class='ads-this'>"
         text += "<a href='house.lgs?idRealty=" + i +"'>"
