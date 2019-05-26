@@ -1,6 +1,4 @@
 <#
-	fun say(a)
-		return int(a) * 100
-
-	writeln(say(10))
+	a = 10 + 12
+	writeln(a)
 #>

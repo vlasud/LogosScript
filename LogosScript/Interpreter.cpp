@@ -146,13 +146,11 @@ std::string get_session_id(std::string request)
 	return result;
 }
 
-std::string generate_session_key(void)
-{
+std::string generate_session_key(void){
 	std::srand(time(0));
 	std::string key = EMPTY;
 
-	do
-	{
+	do{
 		key = EMPTY;
 
 		for (register u_int i = 0; i < 20; i++)
@@ -487,8 +485,7 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 	do_script(session);
 }
 
-void reset_data_arrays_on_ptr(Session &session)
-{
+void reset_data_arrays_on_ptr(Session &session){
 	for (std::map<std::string, Instruction>::iterator iter = session.all_data.begin();
 		iter != session.all_data.end(); iter++)
 	{
@@ -496,29 +493,109 @@ void reset_data_arrays_on_ptr(Session &session)
 	}
 }
 
+std::string check_correct_syntax(LineInstructions &line)
+// Проверка корректности синтаксиса
+{
+	std::string result = EMPTY;
+	// Скобочки
+	int counter[3] = { 0,0,0 };
+	std::string brackets[3][2] = {
+		{"(", ")"},
+		{"[", "]"},
+		{"{", "}"}
+	};
+
+	for (register u_int i = 0; i < line.instructions.size(); i++) {
+		if (line.instructions[i].body == "(") counter[0]++;
+		else if (line.instructions[i].body == ")") counter[0]--;
+		else if (line.instructions[i].body == "[") counter[1]++;
+		else if (line.instructions[i].body == "]") counter[1]--;
+		else if (line.instructions[i].body == "{") counter[2]++;
+		else if (line.instructions[i].body == "}") counter[2]--;
+	}
+	for (register u_int i = 0; i < 3; i++) {
+		if (counter[i] < 0) {
+			// Ошибка.
+			result = "missing bracket " + brackets[i][0];
+			break;
+		}
+		else if (counter[i] > 0) {
+			// Ошибка.
+			result = "missing bracket " + brackets[i][1];
+			break;
+		}
+	}
+	// Последовательность инструкций
+	for (register u_int i = 1; i < line.instructions.size(); i++) {
+		if ((line.instructions[i].body == "(" || line.instructions[i].body == ")"
+			|| line.instructions[i].body == "[" || line.instructions[i].body == "]"
+			|| line.instructions[i].body == "{" || line.instructions[i].body == "}"
+			|| line.instructions[i].body == "++" || line.instructions[i].body == "--")
+			||
+			(line.instructions[i - 1].body == "(" || line.instructions[i - 1].body == ")"
+			|| line.instructions[i - 1].body == "[" || line.instructions[i - 1].body == "]"
+			|| line.instructions[i - 1].body == "{" || line.instructions[i - 1].body == "}")
+			|| line.instructions[i - 1].body == "++" || line.instructions[i - 1].body == "--"
+			) {
+			continue;
+		}
+		if (line.instructions[i].type_of_instruction == line.instructions[i - 1].type_of_instruction ) {
+			// Ошибка.
+			result = "wrong syntax between " + line.instructions[i - 1].body + " and " + line.instructions[i].body;
+			break;
+		}
+		else if (line.instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR) {
+			if (i == line.instructions.size() - 1) {
+				// Ошибка.
+				result = "wrong syntax between " + line.instructions[i].body + " and [end command line]";
+				break;
+			}
+			else if (line.instructions[i + 1].type_of_instruction != TYPE_OF_INSTRUCTION::DATA
+				&& line.instructions[i + 1].body != "("
+				&& line.instructions[i + 1].body != "{"
+				&& line.instructions[i + 1].body != "++"
+				&& line.instructions[i + 1].body != "--") {
+
+				// Ошибка.
+				result = "wrong syntax between " + line.instructions[i].body + " and " + line.instructions[i + 1].body;
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
 void do_script(Session &session)
 // Выполнение скрипта
 {
 	// Размер массива строк
-	unsigned int session_lines_size = session.lines.size();
+	u_int session_lines_size = session.lines.size();
 
 	// Определение начального уровня локального пространства
-	for (register unsigned int i = 0; i < session_lines_size; i++)
-	{
-		if (session.lines[i].instructions.size() > 0)
-		{
+	for (register u_int i = 0; i < session_lines_size; i++){
+		if (session.lines[i].instructions.size() > 0){
 			session.start_level = session.lines[i].namespace_level;
 			break;
 		}
 	}
 
-	for (register unsigned int i = 0; i < session_lines_size; i++)
+	for (register u_int i = 0; i < session_lines_size; i++)
 	{
-		reset_data_arrays_on_ptr(session);
+		// Проверка корректности синтаксиса
+		std::string result_of_check_on_syntax = check_correct_syntax(session.lines[i]);
+		if (result_of_check_on_syntax != EMPTY) {
+			// Ошибка. Синтаксис
+			session.error = new ErrorCore(result_of_check_on_syntax, &session);
+			return;
+		}
+
+		//reset_data_arrays_on_ptr(session);
 
 		// Обновление номера текущей строки в файле
 		session.update_current_line(session.get_start_line() + i);
 
+		// Если локальный уровень пространства не равен начальному - игнорировать
 		if (session.lines[i].namespace_level != session.start_level) continue;
 
 		// Сохранение инструкций перед их выполнением
@@ -540,10 +617,13 @@ void do_script(Session &session)
 							int param_counter = -1;
 							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
 
-							for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
-							{
-								if (session.lines[i].instructions[z].body == ")")
-								{
+							// Определяет конец функции и начинает исполнение операторов внутри параметров функции
+							int bracket_counter = 1;
+							for (register u_int z = j + 2; z < session.lines[i].instructions.size(); z++){
+								if (session.lines[i].instructions[z].body == ")") bracket_counter--;
+								else if (session.lines[i].instructions[z].body == "(") bracket_counter++;
+
+								if (bracket_counter == 0){
 									do_line_script_operators(session, i, j + 1, z - 1);
 									break;
 								}
@@ -593,11 +673,14 @@ void do_script(Session &session)
 									SystemFunction tmp = system_functions[b];
 									byte param_counter = 1;
 
-									for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
-									{
-										if (session.lines[i].instructions[z].body == ")")
-										{
-											do_line_script_operators(session, i, j + 2, z - 1);
+									// Определяет конец функции и начинает исполнение операторов внутри параметров функции
+									int bracket_counter = 1;
+									for (register u_int z = j + 2; z < session.lines[i].instructions.size(); z++) {
+										if (session.lines[i].instructions[z].body == ")") bracket_counter--;
+										else if (session.lines[i].instructions[z].body == "(") bracket_counter++;
+
+										if (bracket_counter == 0) {
+											do_line_script_operators(session, i, j + 1, z - 1);
 											break;
 										}
 									}
@@ -713,6 +796,14 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	unsigned int start_level = session.lines[begin].namespace_level;
 	for (register unsigned int i = begin; i <= end; i++)
 	{
+		// Проверка корректности синтаксиса
+		std::string result_of_check_on_syntax = check_correct_syntax(session.lines[i]);
+		if (result_of_check_on_syntax != EMPTY) {
+			// Ошибка. Синтаксис
+			session.error = new ErrorCore(result_of_check_on_syntax, &session);
+			return;
+		}
+
 		reset_data_arrays_on_ptr(session);
 		// Обновление номера текущей строки в файле
 		session.update_current_line(session.get_start_line() + i);
@@ -738,7 +829,6 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 
 		for (register int j = session.lines[i].instructions.size() - 1; j >= 0; j--)
 		{
-
 			// Если инструкция - данные
 			if (session.lines[i].instructions[j].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
 			{
@@ -753,10 +843,13 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							int param_counter = -1;
 							FunctionDefinition *tmp = &session.definition_functions.find(session.lines[i].instructions[j].body)->second;
 
-							for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
-							{
-								if (session.lines[i].instructions[z].body == ")")
-								{
+							// Определяет конец функции и начинает исполнение операторов внутри параметров функции
+							int bracket_counter = 1;
+							for (register u_int z = j + 2; z < session.lines[i].instructions.size(); z++) {
+								if (session.lines[i].instructions[z].body == ")") bracket_counter--;
+								else if (session.lines[i].instructions[z].body == "(") bracket_counter++;
+
+								if (bracket_counter == 0) {
 									do_line_script_operators(session, i, j + 1, z - 1);
 									break;
 								}
@@ -807,19 +900,21 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 
 									u_int param_counter = 1;
 
-									for (register u_int z = j + 1; z < session.lines[i].instructions.size(); z++)
-									{
-										if (session.lines[i].instructions[z].body == ")")
-										{
-											do_line_script_operators(session, i, j + 2, z - 1);
+									// Определяет конец функции и начинает исполнение операторов внутри параметров функции
+									int bracket_counter = 1;
+									for (register u_int z = j + 2; z < session.lines[i].instructions.size(); z++) {
+										if (session.lines[i].instructions[z].body == ")") bracket_counter--;
+										else if (session.lines[i].instructions[z].body == "(") bracket_counter++;
+
+										if (bracket_counter == 0) {
+											do_line_script_operators(session, i, j + 1, z - 1);
 											break;
 										}
 									}
 									for (register u_int z = j; z < session.lines[i].instructions.size(); z++)
 									{
 										if (session.lines[i].instructions[z].body == ",") param_counter++;
-										else if (session.lines[i].instructions[z].body == ")")
-										{
+										else if (session.lines[i].instructions[z].body == ")"){
 											session.lines[i].instructions.erase(session.lines[i].instructions.begin() + z);
 											break;
 										}
@@ -827,8 +922,7 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 									u_int _param_counter = 1 + (param_counter + param_counter - 1);
 									for (u_int idx = 0; idx < _param_counter && session.lines[i].instructions.size() > 1; idx++)
 									{
-										if (session.lines[i].instructions[j + 1 + idx].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
-										{
+										if (session.lines[i].instructions[j + 1 + idx].type_of_instruction == TYPE_OF_INSTRUCTION::DATA){
 											tmp.set_params(session.lines[i].instructions[j + 1 + idx]);
 										}
 									}
