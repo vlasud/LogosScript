@@ -1,0 +1,7 @@
+<#
+
+	fun _len(array, a)
+		writeln(array[1])
+		writeln(a)
+		writeln(array[0] + a)
+#>

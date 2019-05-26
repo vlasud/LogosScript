@@ -14,13 +14,13 @@ enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 //
-struct MySQL
-{
-	 //Подключение
-	MYSQL *connection;
-	 //Инициализация
-	MYSQL mysql_init;	
-};
+//struct MySQL
+//{
+//	 //Подключение
+//	MYSQL *connection;
+//	 //Инициализация
+//	MYSQL mysql_init;	
+//};
 
 
 class Instruction
@@ -93,12 +93,10 @@ public:
 // Определение функции
 struct FunctionDefinition
 {
-	// Начало функции
-	int begin;
-	// Конец функции
-	int end;
 	// Параметры функции
 	std::vector<Instruction> parametrs;
+	// Команды функции
+	std::vector<LineInstructions> body;
 	// Результат (что вернула функция)
 	Instruction result;
 	// Если была вызвана инструкция return

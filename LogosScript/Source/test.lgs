@@ -1,0 +1,6 @@
+<#
+	fun say(a)
+		return int(a) * 100
+
+	writeln(say(10))
+#>

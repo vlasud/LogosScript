@@ -1,5 +1,9 @@
 #pragma once
 
+class MySQL {
+
+};
+ 
 class Session
 {
 	u_int start_line;

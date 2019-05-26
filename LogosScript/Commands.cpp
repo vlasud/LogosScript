@@ -241,6 +241,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 			else if (temp.body == "fun")
 			{
 				FunctionDefinition new_function;
+				int body_index_of_function = -1;
 
 				// Поиск параметров функции
 				for (register unsigned int i = 2; i < session.lines[line].instructions.size(); i++)
@@ -253,23 +254,28 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				for (register int find_begin_new_counter = line + 1; find_begin_new_counter < session.lines.size(); find_begin_new_counter++)
 					if (session.lines[find_begin_new_counter].namespace_level == session.lines[line].namespace_level + 1)
 					{
-						new_function.begin = find_begin_new_counter;
+						body_index_of_function = find_begin_new_counter;
 						break;
 					}
 
 				// Поиск конца нового уровеня локального пространства
-				new_function.end = line + 1;
-				while (new_function.end < session.lines.size() && (session.lines[new_function.end].namespace_level > session.lines[line].namespace_level
-					|| session.lines[new_function.end].namespace_level == 0))
-					new_function.end++;
+				while (body_index_of_function < session.lines.size() && (session.lines[body_index_of_function].namespace_level > session.lines[line].namespace_level
+					|| session.lines[body_index_of_function].namespace_level == 0)) {
 
-				if (new_function.end == -1) new_function.end = new_function.begin;
-				else new_function.end--;
-				if (new_function.end != -1)
-				{
+					if (session.lines[body_index_of_function].instructions.size() > 0) {
+						new_function.body.push_back(session.lines[body_index_of_function]);
+					}
+					body_index_of_function++;
+				}
+
+				if (body_index_of_function != -1){
 					session.definition_functions[session.lines[line].instructions[1].body] = new_function;
 				}
-				i = new_function.end;
+				else {
+					session.error = new ErrorCore("the function must have at least 1 instruction", &session);
+					return true;
+				}
+				i = body_index_of_function;
 				break;
 			}
 			else if (temp.body == "continue")

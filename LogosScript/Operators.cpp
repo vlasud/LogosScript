@@ -131,7 +131,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							last_cmd_body = session.lines[line].instructions[i].body;
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 							end--;
+							f--;
 						} while ((last_cmd_body != "]") && f < session.lines[line].instructions.size());
+
 						i--;
 						break;
 					}
@@ -2129,6 +2131,15 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 		}
 	}
 
+	// Если выше уже была работа с массивом, то результат хранится в родительской переменной
+	// Это костыль. Происходит запись в дочернюю переменную
+	for (register u_int j = 0; j < session.lines[line].instructions.size(); j++) {
+		if (session.lines[line].instructions[j].ptr != nullptr && (session.lines[line].instructions[j].array.size() > 0 ||
+			session.lines[line].instructions[j].array_map.size() > 0)) {
+			session.lines[line].instructions[j].ptr->data = session.lines[line].instructions[j].data;
+			session.lines[line].instructions[j].ptr->type_of_data = session.lines[line].instructions[j].type_of_data;
+		}
+	}
 
 	if (end >= session.lines[line].instructions.size()) end = session.lines[line].instructions.size() - 1;
 	for (register int i = end; i >= begin; i--)

@@ -1,0 +1,74 @@
+<#
+
+     include("/header.lgs")
+#>
+    
+    
+        <div class="logo">
+            <img src="img/logo1.png" alt="Логотип">
+        </div>
+    
+    
+<#
+    if(!is_null(_post["u_edit_button"]))
+        if(!is_null(_get["id_Client"]))
+            request = null
+            request = "UPDATE users SET name='" + _post["u_name"] + "'"
+            request += ",surname='" + _post["u_surname"] + "'"
+            request += ",phone_number='" + _post["u_phone_number"] + "'"
+            request += ",login='" + _post["u_login"] + "'"
+            request += ",pass='" + _post["u_password"] + "'"
+            request += ",access='" + _post["u_access"] + "'"
+            request += " WHERE idUsers = " + _get["id_Client"]
+        elif(!is_null(_get["id_Realty"]))
+            request = null
+            request = "UPDATE realty SET name='" + _post["u_name"] + "'"
+            request += ",phone_number='" + _post["u_phone_number"] + "'"
+            request += ",number_of_rooms='" + _post["u_rooms"] + "'"
+            request += ",floor='" + _post["u_floor"] + "'"
+            request += ",address='" + _post["u_address"] + "'"
+            request += ",price='" + _post["u_price"] + "'"
+            request += " WHERE idRealty = " + _get["id_Realty"]
+        query(connection, request)
+        redirect("/index.lgs")
+
+    if(!is_null(_get["id_Client"]) && is_null(_get["id_Realty"]))
+        result = query(connection, "SELECT * FROM users WHERE idUsers = '" + _get["id_Client"] + "' LIMIT 1")
+
+        text = null
+        text += "<div class='editPersonPage'>"
+        text += "<h3>Изменить пользователя</h3>"
+        text += "<form action='#' method = 'POST' class='form_edit_person'>"
+        text += "<input name = 'u_name' type='text' placeholder='Имя' value='" + result[0]["name"] + "'>"
+        text += "<input name = 'u_surname' type='text' placeholder='Фамилия' value='" + result[0]["surname"] + "'>"
+        text += "<input name = 'u_phone_number'  type='tel' placeholder='Номер телефона' value='" + result[0]["phone_number"] + "'>"
+        text += "<input name = 'u_login'  type='text' placeholder='Логин' value='" + result[0]["login"] + "'>"
+        text += "<input name = 'u_password' type='password' placeholder='Пароль' value='" + result[0]["pass"] + "'>"
+        text += "<input name = 'u_access' type='number' placeholder='Уровень доступа' value='" + result[0]["access"] + "'>"
+        text += "<input name = 'u_edit_button' type='submit' value='Подтвердить'>"
+        text += "<p>Уровень доступа: 1 - Администратор, 2 - обычный работник</p>"
+        text += "</form>"        
+        text += "</div>"
+        write(text)
+    elif(!is_null(_get["id_Realty"]))
+        result = query(connection, "SELECT * FROM realty WHERE idRealty = '" + _get["id_Realty"] + "' LIMIT 1")
+
+        text = null
+        text += "<div class='editRealtyPage'>"
+        text += "<h3>Изменить объявление</h3>"
+        text += "<form action='#' method = 'POST' class='form_edit_realty'>"
+        text += "<input name = 'u_name' type='text' placeholder='Имя' value='" + result[0]["name"] + "'>"
+        text += "<input name = 'u_phone_number'  type='tel' placeholder='Номер телефона' value='" + result[0]["phone_number"] + "'>"
+        text += "<input name = 'u_rooms'  type='number' placeholder='Количество комнат' value='" + result[0]["number_of_rooms"] + "'>"
+        text += "<input name = 'u_floor' type='number' placeholder='Этаж' value='" + result[0]["floor"] + "'>"
+        text += "<input name = 'u_address' type='text' placeholder='Адрес' value='" + result[0]["address"] + "'>"
+        text += "<input name = 'u_price' type='number' placeholder='Цена' value='" + result[0]["price"] + "'>"
+        text += "<input name = 'u_edit_button' type='submit' value='Подтвердить'>"
+        text += "</form>"        
+        text += "</div>"
+        write(text)
+#>
+          
+    
+</body>
+</html>

@@ -1,0 +1,121 @@
+<#
+  if(!is_null(_post["h_button"]))
+    text = null
+    text += "INSERT INTO orders (name, phone_number, idRealty) VALUES ('"
+    text += _post["h_name"] + "','" + _post["h_phone_number"] + "','" + realty_array[int(_get["idRealty"])]["idRealty"] + "')"
+    query(connection, text)
+    
+
+  include("/header.lgs")
+#>
+       
+        
+    <div class="logo">
+        <img src="img/logo1.png" alt="Логотип">
+    </div>
+    
+    
+    <div class="container">
+        <div class="house">
+            <div class="title">
+<#
+  write("<p>" + realty_array[int(_get["idRealty"])]["number_of_rooms"] + "-к квартира,</p>")
+  write("<p>" + realty_array[int(_get["idRealty"])]["floor"] + " этаж</p>")
+  write("<p>" + realty_array[int(_get["idRealty"])]["price"] + "р</p>")
+#>
+            </div>
+            <div class="slider">
+                 <div class="swiper-container">
+                        <div class="swiper-wrapper">
+                          <div class="swiper-slide"><img src="img/houses/s1200.jpg" alt="Картинка"></div>
+                          <div class="swiper-slide">Slide 2</div>
+                          <div class="swiper-slide">Slide 3</div>
+                          <div class="swiper-slide">Slide 4</div>
+                          <div class="swiper-slide">Slide 5</div>
+                        </div>
+                        <div class="swiper-pagination"></div>
+                  </div>
+            </div>
+            <div class="information">
+<#
+  write("<p><b>Количество комнат:</b>" + realty_array[int(_get["idRealty"])]["number_of_rooms"] + "</p>")
+  write("<p><b>Адрес:</b>" + realty_array[int(_get["idRealty"])]["address"] + "</p>")
+  write("<p><b>Этаж:</b>" + realty_array[int(_get["idRealty"])]["floor"] + "</p>")
+  write("<p><b>Телефон для связи:</b>" + realty_array[int(_get["idRealty"])]["phone_number"] + "</p>")
+#>
+            </div>
+            
+            
+          
+            
+            
+<#
+    if(!is_null(local_user_info))
+        text = null 
+        text += "<div class='order_authorized'>"
+        text += "<a href = 'delete.lgs?id_Realty=" + realty_array[int(_get["idRealty"])]["idRealty"] + "'><button>Удалить это объявление</button></a>"
+        text += "<a href = 'edit.lgs?id_Realty=" + realty_array[int(_get["idRealty"])]["idRealty"] + "'><button>Редактировать это объявление</button></a>"
+        text +=  "</div>"
+        write(text)
+    else 
+        text = null 
+        text += "<div class='order'>"
+        text += "<h2>Вам понравилась недвижимость? Свяжитесь с нами!</h2>"
+        text += "<button onclick='showModalWinOrder()'>Связаться с нами</button>"
+        text += "</div>"
+        write(text)
+#>
+            
+            
+<!--
+            <div class="map">
+                
+            </div>
+-->
+        </div>
+    </div>
+
+        
+        
+            <div class="footer">
+            <div class="container__contact">
+                <div class="contact__grid">
+                    <div class="logo__contact"><img src="img/logo1.png" alt="Логотип"><span></span></div>
+                    <div>+79143548352</div>
+                    <div><a href="#"><i class="fab fa-vk"></i></a><a href="#"><i class="fab fa-twitter"></i></a><a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-facebook"></i></a></div>
+                    <div>ул.Ленина 8</div>
+                </div>
+            </div>
+        </div>    
+        
+        
+        
+
+     <div class="do_order">
+       <h2>Заявка</h2>
+        <form action="#" method = "POST" class="grid__bespeak">
+            <input type="text" name="h_name" placeholder="Ваше имя">
+            <input type="tel" name="h_phone_number" placeholder="Ваш телефон">
+            <input type="submit" name="h_button" value="Ok">
+            <button class="auth-btn-close-shadow">Отмена</button>
+            <p>Мы свяжемся с вами через некоторое время!</p>
+        </form>
+    </div>   
+
+
+
+  <script src="js/swiper.min.js"></script>
+  <script src="js/script1.js"></script>
+
+  <!-- Initialize Swiper -->
+  <script>
+    var swiper = new Swiper('.swiper-container', {
+      pagination: {
+        el: '.swiper-pagination',
+        dynamicBullets: true,
+      },
+    });
+  </script>
+
+</body>
+</html>

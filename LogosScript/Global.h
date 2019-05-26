@@ -10,7 +10,7 @@
 #include <ctime>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-#include "mysql/mysql.h"
+//#include "mysql/mysql.h"
 #include <vector>
 #include <fstream>
 #include <algorithm>

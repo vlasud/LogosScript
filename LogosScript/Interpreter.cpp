@@ -551,13 +551,24 @@ void do_script(Session &session)
 
 							// Копирование параметров
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
-								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
-								{
-									tmp->parametrs[++param_counter] = session.lines[i].instructions[z];
+								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA){
+									param_counter++;
+									std::string body_name = tmp->parametrs[param_counter].body;
+									tmp->parametrs[param_counter] = session.lines[i].instructions[z];
+									tmp->parametrs[param_counter].body = body_name;
 								}
 
-							do_script(session, tmp->begin, tmp->end, false, tmp);
-
+							// Размер вектора lines до добавления тела функции
+							u_int last_index			= session.lines.size();
+							// Размер тела функции
+							size_t function_body_size	= tmp->body.size();
+							// Вставка тела функции в вектор lines
+							session.lines.insert(session.lines.end(), tmp->body.begin(), tmp->body.end());
+							// Исполнение инструкций
+							do_script(session, last_index, last_index + function_body_size, false, tmp);
+							// Удаление тела инструкций из вектора lines
+							session.lines.erase(session.lines.begin() + last_index, session.lines.end());
+							// Запись результата возврата функции
 							session.lines[i].instructions[j] = tmp->result;
 							
 							// Удаление лишних инструкций после вызова функций
@@ -568,6 +579,9 @@ void do_script(Session &session)
 								p--;
 							}
 							session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+
+							// Если была вызвана команда return - завершить работу функции
+							if (session.current_function->isReturn) return;
 							continue;
 						}
 						else if (j > 0 && session.lines[i].instructions[j - 1].body != "fun" || j == 0)
@@ -749,13 +763,24 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							}
 							// Копирование параметров
 							for (register unsigned int z = j + 1; z < session.lines[i].instructions.size() && session.lines[i].instructions[z].body != ")"; z++)
-								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA)
-								{
-									tmp->parametrs[++param_counter] = session.lines[i].instructions[z];
+								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
+									param_counter++;
+									std::string body_name = tmp->parametrs[param_counter].body;
+									tmp->parametrs[param_counter] = session.lines[i].instructions[z];
+									tmp->parametrs[param_counter].body = body_name;
 								}
 
-							do_script(session, tmp->begin, tmp->end, false, tmp);
-
+							// Размер вектора lines до добавления тела функции
+							u_int last_index = session.lines.size();
+							// Размер тела функции
+							size_t function_body_size = tmp->body.size();
+							// Вставка тела функции в вектор lines
+							session.lines.insert(session.lines.end(), tmp->body.begin(), tmp->body.end());
+							// Исполнение инструкций
+							do_script(session, last_index, last_index + function_body_size, false, tmp);
+							// Удаление тела инструкций из вектора lines
+							session.lines.erase(session.lines.begin() + last_index, session.lines.end());
+							// Запись результата возврата функции
 							session.lines[i].instructions[j] = tmp->result;
 
 							// Удаление лишних инструкций после вызова функций
@@ -767,6 +792,9 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							}
 							if(session.lines[i].instructions.size() > j + 1)
 								session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+
+							// Если была вызвана команда return - завершить работу функции
+							if (session.current_function->isReturn) return;
 							continue;
 						}
 						else if (j > 0 && session.lines[i].instructions[j - 1].body != "fun" || j == 0)

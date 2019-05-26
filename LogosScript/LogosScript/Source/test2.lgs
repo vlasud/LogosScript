@@ -1,5 +1,0 @@
-<#
-
-	fun say()
-		writeln("Hello")
-#>

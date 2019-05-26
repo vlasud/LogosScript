@@ -58,11 +58,11 @@ void __str(SystemFunction *object);
 // Получить тип данных объекта
 void typeof(SystemFunction *object);
  //Установить связь с базой данных
-void mysql_connect(SystemFunction *object);
- //Прерывает связь с базой данных
-void mysql_close(SystemFunction *object);
- //Посылает запрос к базе данных
-void mysql_query(SystemFunction *object);
+//void mysql_connect(SystemFunction *object);
+// //Прерывает связь с базой данных
+//void mysql_close(SystemFunction *object);
+// //Посылает запрос к базе данных
+//void mysql_query(SystemFunction *object);
 //Переход на другой документ
 void include(SystemFunction *object);
 // Есть ли данные
@@ -102,9 +102,9 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"bool", 1, __bool},
 	SystemFunction {"str", 1, __str},
 	SystemFunction {"typeof", 1, typeof},
-	SystemFunction {"connect", 4, mysql_connect},
+	/*SystemFunction {"connect", 4, mysql_connect},
 	SystemFunction {"close", 1, mysql_close},
-	SystemFunction {"query", 2, mysql_query},
+	SystemFunction {"query", 2, mysql_query},*/
 	SystemFunction {"include", 1, include},
 	SystemFunction {"is_null", 1, is_null},
 	SystemFunction {"del_session", 0, del_session},
