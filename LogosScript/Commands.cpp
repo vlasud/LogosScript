@@ -13,9 +13,21 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 
 			if (temp.body == "if" || temp.body == "elif")
 			{
+				if (temp.body == "elif" && session.last_command != "if") {
+					// Синтаксическая ошибка
+					session.error = new ErrorCore("before invoking the 'elif' command there should be an if command", &session);
+					return true;
+				}
+
 				session.last_command = "if";
 				if (temp.body == "elif")
 					if (session.last_command == "if" && session.last_command_success == true) break;
+
+				if (i + 1 >= session.lines[line].instructions.size()) {
+					// Синтаксическая ошибка
+					session.error = new ErrorCore("command if/elif must have a logical expression", &session);
+					return true;
+				}
 
 				for (register int find_data_counter = i + 1; find_data_counter <= end; find_data_counter++)
 				{
@@ -53,13 +65,17 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 								do_script(session, begin_new, end_new, false, nullptr, true);
 								return false;
 							}
+							else {
+								session.error = new ErrorCore("command 'if/elif' must contain body", &session);
+								return true;
+							}
 						}
 						else session.last_command_success = false;
 					}
 					else if (find_data_counter == end)
 					{
 						// Синтаксическая ошибка
-						session.error = new ErrorCore("this command must have a logical expression", &session);
+						session.error = new ErrorCore("command if/elif must have a logical expression", &session);
 						return true;
 					}
 				}
@@ -67,6 +83,11 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 			else if (temp.body == "else")
 			{
 				if ((session.last_command == "if") && session.last_command_success) break;
+				else if (session.last_command != "if" && session.last_command != "elif") {
+					// Синтаксическая ошибка
+					session.error = new ErrorCore("before invoking the 'else' command there should be an if or elif command", &session);
+					return true;
+				}
 
 				int begin_new = -1;
 				int end_new = -1;
@@ -93,6 +114,10 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					session.last_command_success = true;
 					do_script(session, begin_new, end_new, false, nullptr, true);
 					return false;
+				}
+				else {
+					session.error = new ErrorCore("command 'else' must contain body", &session);
+					return true;
 				}
 			}
 			else if (temp.body == "while")
@@ -149,6 +174,10 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 									return true;
 								}
 							}
+							else {
+								session.error = new ErrorCore("command 'while' must contain body", &session);
+								return true;
+							}
 						}
 					}
 					else if (find_data_counter == end)
@@ -170,7 +199,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				std::vector<Instruction> thr_commands_of_loop;
 
 				// Поиск разделенных частей команд цикла
-				for (register unsigned int i = 0; i < session.lines[line].instructions.size(); i++)
+				for (register unsigned int i = 0; i < session.lines[line].instructions.size() - 1; i++)
 				{
 					if (session.lines[line].instructions[i].body == ";")
 						divide_operator_counter++;
@@ -180,8 +209,8 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 					else if (divide_operator_counter == 2)
 						thr_commands_of_loop.push_back(session.lines[line].instructions[i]);
 				}
-				if (divide_operator_counter < 2)
-				{
+				// Если в команде for меньше 3 операторов
+				if (divide_operator_counter < 2){
 					session.error = new ErrorCore("command must contain 3 blocks", &session);
 					return true;
 				}
@@ -232,6 +261,10 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 							session.isBreak = false;
 							return true;
 						}
+					}
+					else {
+						session.error = new ErrorCore("command 'for' must contain body", &session);
+						return true;
 					}
 					session.lines[line].instructions = thr_commands_of_loop;
 					do_script(session, line, line, true);
@@ -288,7 +321,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				session.isBreak= true;
 				break;
 			}
-			else if (temp.body == "return")
+			else if (temp.body == "ret")
 			{
 				if (i + 1 < session.lines[line].instructions.size())
 				{

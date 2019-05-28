@@ -1,4 +1,8 @@
 <#
-	a = 10 + 12
-	writeln(a)
+	static var += 50
+
+
+
+	
+	writeln(var)
 #>

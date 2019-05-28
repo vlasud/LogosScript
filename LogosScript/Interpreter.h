@@ -3,7 +3,7 @@
 // Массив операторов
 const std::vector<std::string> OPERATORS = { "==", "(", ")", "+", "-", "/", "*", "=", "+=", "-=", "*=", "/=", "++", "--", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "!", ";", ",", "{", "}", "[", "]"};
 // Массив команд
-const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "return", "global", "continue", "break", "const", "static"};
+const std::vector<std::string> COMMANDS = { "if", "elif", "else", "while", "for", "fun", "ret", "global", "continue", "break", "const", "static"};
 // Массив ключевых слов
 const std::vector<std::string> KEY_WORDS = { "true", "false", "null" };
 

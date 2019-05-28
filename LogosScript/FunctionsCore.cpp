@@ -24,13 +24,6 @@ void SystemFunction::start_function(Session *session)
 	}
 	this->session = session;
 
-	// ≈сли были переданы элементы массива, то переопределить их как обычные переменные
-	for (u_int i = 0; i < this->instructions_of_function.size(); i++)
-	{
-		if (this->instructions_of_function[i].ptr != nullptr)
-			this->instructions_of_function[i] = *this->instructions_of_function[i].ptr;
-	}
-
 	this->ptr_on_function(this);
 }
 

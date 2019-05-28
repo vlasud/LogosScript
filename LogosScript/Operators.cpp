@@ -3,8 +3,13 @@
 void do_line_script_operators(Session& session, const unsigned int line, const unsigned int begin, unsigned int end)
 // Выполнение часть инструкций в строке. Работа с операторами
 {
+	// Очистка указателя
+	for (register u_int i = begin; i <= end; i++) {
+		session.lines[line].instructions[i].ptr = nullptr;
+	}
+
 	// Парсинг фигурных скобочек (для массива)
-	end -= parse_array_brackets(session, line, begin, end);
+	parse_array_brackets(session, line, begin, end);
 
 	// Последний элемент в массиве
 	void* last_ptr = nullptr;
@@ -126,13 +131,15 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 
 						// Удаление использованных инструкций
 						std::string last_cmd_body;
+						int bracket_counter = 0;
 						do
 						{
 							last_cmd_body = session.lines[line].instructions[i].body;
 							session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 							end--;
-							f--;
-						} while ((last_cmd_body != "]") && f < session.lines[line].instructions.size());
+							if (last_cmd_body == "[") bracket_counter++;
+							else if (last_cmd_body == "]") bracket_counter--;
+						} while (bracket_counter != 0);
 
 						i--;
 						break;
@@ -3018,9 +3025,17 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 			}
 		}
 	}
+	// Если массив указывал на какой-либо индекс - перескок на элемент по этому индексу
+	for (register u_int m = begin; m <= end && m < session.lines[line].instructions.size(); m++) {
+		if (session.lines[line].instructions[m].ptr != nullptr
+			&& session.lines[line].instructions[m].ptr != 0x00) {
+			Instruction tmp_swap = *session.lines[line].instructions[m].ptr;
+			session.lines[line].instructions[m] = tmp_swap;
+		}
+	}
 }
 
-int parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int end)
+int parse_array_brackets(Session &session, const unsigned int line, const unsigned int begin, unsigned int &end)
 // Парсинг фигурных собочек
 {
 	int sub = 0;
@@ -3085,10 +3100,11 @@ int parse_array_brackets(Session &session, const unsigned int line, const unsign
 void write_data_from_local_to_global(Session &session, Instruction &first, Instruction &second)
 // Запись данных из кэша в глабольную переменную
 {
+
 	Instruction *to		= (first.ptr != nullptr && (first.array.size() > 0 || first.array_map.size() > 0)) ? first.ptr : &first;
 	Instruction *from	= (second.ptr != nullptr && (second.array.size() > 0 || second.array_map.size() > 0)) ? second.ptr : &second;
 
-	if (to->isConst && to->type_of_data != TYPE_OF_DATA::_NONE)
+	if (to->isConst && to->type_of_data != TYPE_OF_DATA::_NONE || first.isConst || !first.isVariable)
 	{
 		if (to->data == from->data) return;
 
@@ -3113,9 +3129,6 @@ void write_data_from_local_to_global(Session &session, Instruction &first, Instr
 	{
 		to->array_map = from->array_map;
 	}
-
-	second.ptr = nullptr;
-	first.ptr = nullptr;
 
 	session.all_data.find(first.body)->second = first;
 
