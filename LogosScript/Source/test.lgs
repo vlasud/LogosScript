@@ -1,8 +1,7 @@
 <#
-	static var += 50
 
+	global a
+	a = 100
 
-
-	
-	writeln(var)
+	writeln(a)
 #>

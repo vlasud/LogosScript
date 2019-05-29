@@ -575,6 +575,18 @@ std::string check_correct_syntax(LineInstructions &line)
 	return result;
 }
  
+void action_of_function_return(Session &session) 
+// Вызывается каждый раз после выполнения пользовательской функции
+{
+	// Обновить данные с модификатором global
+	for (auto b = session.all_data.begin(); b != session.all_data.end(); b++)
+		if (b->second.isUsedHasGlobal) {
+			session.all_data_buffer[b->second.body] = b->second;
+		}
+
+	session.all_data = session.all_data_buffer;
+	session.all_data_buffer.clear();
+}
 
 void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func, bool isCommand)
 // Выполнение скрипта
@@ -674,8 +686,21 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							size_t function_body_size = tmp->body.size();
 							// Вставка тела функции в вектор lines
 							session.lines.insert(session.lines.end(), tmp->body.begin(), tmp->body.end());
+							// Сохранение в буффер инструкций текущей функции
+							// Это необходимо т.к при передаче данных в другую функцию после исполнения они удаляются
+							std::map<std::string, Instruction> buffer_for_instructions_current_func = session.all_data;
 							// Исполнение инструкций
 							do_script(session, last_index, last_index + function_body_size - 1, false, tmp);
+							
+							
+							// Запись инструкций из буффера
+							for (auto b = session.all_data.begin(); b != session.all_data.end(); b++) {
+								if (b->second.isUsedHasGlobal) {
+									buffer_for_instructions_current_func[b->second.body] = session.all_data[b->second.body];
+								}
+							}
+							session.all_data = buffer_for_instructions_current_func;
+
 							// Удаление тела инструкций из вектора lines
 							session.lines.erase(session.lines.begin() + last_index, session.lines.end());
 							// Запись результата возврата функции
@@ -692,7 +717,10 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 							}
 
 							// Если была вызвана команда return - завершить работу функции
-							if (session.current_function->isReturn) return;
+							if (session.current_function->isReturn) {
+								action_of_function_return(session);
+								return;
+							}
 							continue;
 						}
 						// Если возможно это системная функция
@@ -810,17 +838,8 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 			}
 		}
 	}
-	if (func != nullptr)
-	{
-		// Обновить данные с модификатором global
-		for (auto b = session.all_data.begin(); b != session.all_data.end(); b++)
-			if (b->second.isUsedHasGlobal){
-				b->second.isUsedHasGlobal = false;
-				session.all_data_buffer[b->second.body] = b->second;
-			}
-
-		session.all_data = session.all_data_buffer;
-		session.all_data_buffer.clear();
+	if (func != nullptr){
+		action_of_function_return(session);
 	}
 }
 
