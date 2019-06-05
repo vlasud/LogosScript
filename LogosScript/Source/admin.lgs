@@ -1,8 +1,10 @@
 <#
-    include("/header.lgs")
-
     if(is_null(local_user_info))
         redirect("/index.lgs")
+
+    include("/connect.lgs")
+    include("/header.lgs")
+
 
     if(!is_null(_post))
         if(!is_null(_post["add_user"]))
@@ -110,14 +112,14 @@
         </table>
         <div class="addRealty">
            <h3>Добавить объявление</h3>
-            <form method = "POST" class="form_add_realty">
+            <form method = "POST" enctype="multipart/form-data" class="form_add_realty">
                 <input type="text" name="r_name" placeholder="Имя">
                 <input type="tel" name="r_phone_number" placeholder="Номер телефона">
                 <input type="number" name="r_number_of_rooms" placeholder="Количество комнат">
                 <input type="number" name="r_floor" placeholder="Этаж">
                 <input type="text" name="r_address" placeholder="Адрес">
                 <input type="number" name="r_price" placeholder="Цена">
-                <input type="file">
+                <input type="file" name = "r_file" multiple accept="image/*,image/jpeg">
                 <input type="submit" name = "add_realty" value="Подтвердить">
             </form> 
         </div> 
@@ -143,6 +145,8 @@
         text += "<td class='active'><a href='delete.lgs?id_Order=" + result[i]["idOrders"] + "'>Удалить</a></td>"
         text += "</tr>"
         write(text)
+
+    close(connection)
 #>
         </table>
     </div>

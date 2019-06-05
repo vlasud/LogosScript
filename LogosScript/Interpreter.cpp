@@ -1,151 +1,5 @@
 ﻿#include "Global.h"
 
-Instruction parse_global_data(const std::string request)
-// Парсинг POST и GET данных
-{
-	Instruction result;
-	result.type_of_data = TYPE_OF_DATA::_STRING;
-	result.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-
-	std::string data = EMPTY;
-	std::string key = EMPTY;
-
-	for (register u_int i = 0; i < request.length() && request[i] != ' '; i++)
-		data += request[i];
-
-	if (data == "GET")
-	{
-		result.body = "_get";
-
-		data = EMPTY;
-		for (register u_int i = 0; i < request.length(); i++)
-		{
-			if (request[i] == '?')
-			{
-				for (register u_int j = i + 1; j < request.length(); j++)
-				{
-					if (request[j] == '=')
-					{
-						key = data;
-						data = EMPTY;
-					}
-					else if (request[j] == '&' || request[j] == ' ')
-					{
-						Instruction tmp;
-						tmp.selected_char = -1;
-						tmp.type_of_data = TYPE_OF_DATA::_STRING;
-						tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-						tmp.data = data;
-
-						result.array_map[key] = tmp;
-
-						key = EMPTY;
-						data = EMPTY;
-						
-						if (request[j] == ' ') break;
-					}
-					else data += request[j];
-				}
-				break;
-			}
-		}
-	}
-	else if (data == "POST")
-	{
-		result.body = "_post";
-
-		data = EMPTY;
-		for (register u_int i = 0; i < request.length(); i++)
-		{
-			if (request[i] == '\n')
-			{
-				if (data.length() == 1)
-				{
-					data = EMPTY;
-
-					for (register u_int j = i + 1; j < request.length(); j++)
-					{
-						if (request[j] == '=')
-						{
-							key = data;
-							data = EMPTY;
-						}
-						else if (request[j] == '&' || request[j] == '\0' || j == request.length() - 1)
-						{
-							Instruction tmp;
-							tmp.selected_char = -1;
-							tmp.type_of_data = TYPE_OF_DATA::_STRING;
-							tmp.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-							tmp.data = data;
-
-							result.array_map[key] = tmp;
-
-							key = EMPTY;
-							data = EMPTY;
-
-							if (request[j] == '\0') break;
-						}
-						else data += request[j];
-					}
-					break;
-				}
-
-				data = EMPTY;
-			}
-			else data += request[i];
-		}
-	}
-	if (result.array_map.size() == 1)
-	{
-		result.data = EMPTY;
-	}
-	return result;
-}
-
-std::string get_session_id(std::string request)
-{
-	std::string result = EMPTY;
-	std::string key = EMPTY;
-
-	for (register u_int i = 0; i < request.length(); i++)
-	{
-		if (request[i] == '\n')
-			result = EMPTY;
-		else
-		{
-			if (request[i] == ':')
-			{
-				if (result == "Cookie")
-				{
-					result = EMPTY;
-					for (register u_int j = i + 1; j < request.length(); j++)
-					{
-						if (request[j] == ' ') continue;
-
-						if (request[j] == '=')
-						{
-							key = result;
-							result = EMPTY;
-						}
-						else if (j == request.length() - 1 || request[j] == '\n' || request[j] == ';' || request[j] == '\r')
-						{
-							if (key == "SESSION")
-							{
-								return result;
-							}
-							result = EMPTY;
-						}
-						else result += request[j];
-					}
-				}
-			}
-			else result += request[i];
-		}
-	}
-	result = EMPTY;
-	return result;
-}
-
 std::string generate_session_key(void){
 	std::srand(time(0));
 	std::string key = EMPTY;
@@ -162,183 +16,175 @@ std::string generate_session_key(void){
 }
 
 
-
-void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session *_session)
+std::string interpreter_start(const SOCKET client_socket, Page &page_object, Server *server, Session *_session)
 // client_socket - сокет клиента
 // file_id - смещение вектора файлов сайта
 {
-	Page page_object					= all_pages[file_id];
 	bool isError						= false;
 	bool isScriptFound					= false;
+	bool isEndFound						= false;
 	std::string redirect_page			= EMPTY;
-	std::string session_key				= EMPTY;
-	unsigned int count_lines_of_file	= all_pages[file_id].all_lines.size();
+	std::string session_key				= (server != nullptr) ? server->get_logosid() : EMPTY;
+	unsigned int count_lines_of_file	= page_object.all_lines.size();
+	
 
-	for (unsigned register int i = 0; i < count_lines_of_file; i++)
+	for (register u_int i = 0; i < count_lines_of_file; i++)
 	{
-		if (page_object.all_lines[i][0] == '<' && page_object.all_lines[i][1] == '#')
-		{
-			for (unsigned register int j = i + 1; j < count_lines_of_file; j++)
+		for (register u_int i_begin = 0; i_begin + 1 < page_object.all_lines[i].size(); i_begin++) {
+			if (page_object.all_lines[i][i_begin] == '<' && page_object.all_lines[i][i_begin + 1] == '#')
 			{
-				if (page_object.all_lines[j][0] == '#' && page_object.all_lines[j][1] == '>')
+				for (register u_int j = i + 1; j < count_lines_of_file; j++)
 				{
-					Session session(i + 1, client_socket);
-					// Получение идентификатора сессии
-					session_key = get_session_id(request);
-
-					// Если клиент имеет куки с ключом сессии
-					if (session_key != EMPTY)
-					{
-						// Если в памяти уже хранятся данные сессии с таким ключом
-						// Происходит копирование всех данных
-						if (all_user_sessions.find(session_key) != all_user_sessions.end())
+					for (register u_int i_end = 0; i_end + 1 < page_object.all_lines[j].size(); i_end++) {
+						if (page_object.all_lines[j][i_end] == '#' && page_object.all_lines[j][i_end + 1] == '>')
 						{
-							session.all_data			= all_user_sessions[session_key].all_data;
-							session.all_data_buffer		= all_user_sessions[session_key].all_data_buffer;
-							session.mysql_connections	= all_user_sessions[session_key].mysql_connections;
+							Session session(i + 1, client_socket);
+							// Получение идентификатора сессии
+
+							// Если клиент имеет куки с ключом сессии
+							if (session_key != EMPTY)
+							{
+								// Если в памяти уже хранятся данные сессии с таким ключом
+								// Происходит копирование всех данных
+								if (all_user_sessions.find(session_key) != all_user_sessions.end())
+								{
+									session.all_data = all_user_sessions[session_key].all_data;
+									session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
+									session.mysql_connections = all_user_sessions[session_key].mysql_connections;
+								}
+								// Иначе выделяется память под данную сессию
+								else all_user_sessions[session_key] = session;
+							}
+							// Если у клиента нет куки с id сессии
+							else
+							{
+								// Если клиент зашел впервые - генерируется новый ключ сессии
+								if (_session == nullptr || _session == nullptr && _session->session_key == EMPTY)
+								{
+									session_key = generate_session_key();
+									all_user_sessions[session_key] = session;
+								}
+								// Если данная функция была вызвана путем команды include (т.к в параметре request будет пусто)
+								// То скопировать все данные сессии из предыдущего вызова данной функции
+								else if (_session != nullptr) {
+									session_key = _session->session_key;
+								}
+							}
+							session.session_key = session_key;
+							// Запись названия текущего файла
+							session.set_file_name(page_object.getName());
+
+							// Удаление всех данных с именем _post и _get
+							if (server != nullptr) {
+								std::map<std::string, Instruction>::iterator iter = session.all_data.find("_post");
+								if (iter != session.all_data.end()) session.all_data.erase(iter);
+
+								iter = session.all_data.find("_get");
+								if (iter != session.all_data.end()) session.all_data.erase(iter);
+
+								// Если были переданы GLOBAL параметры, то записать их
+								session.all_data[server->get_global_data().body] = server->get_global_data();
+							}
+							all_user_sessions[session_key].all_data = session.all_data;
+
+							// Если существуют статические данные, то скопировать их в текущую сессию
+							if (static_data.size() > 0)
+								session.all_data.insert(static_data.begin(), static_data.end());
+
+							if (_session != nullptr) {
+								session.mysql_connections = _session->mysql_connections;
+								session.all_data = _session->all_data;
+								session.all_data_buffer = _session->all_data_buffer;
+								session.definition_functions = _session->definition_functions;
+							}
+
+							// Выполнение скрипта
+							read_script(session, page_object, i + 1, j - 1);
+
+							// Если была ошибка - показать сообщение ошибки
+							if (session.error != nullptr)
+							{
+								if (_session != nullptr) {
+									_session->error = new ErrorCore(session.error->get_error_text(), _session);
+								}
+								page_object.all_lines.clear();
+								page_object.all_lines.push_back(session.error->get_error_text());
+								isError = true;
+								break;
+							}
+							// Иначе заменить исполняемый скрипт на результат работы скрипта
+							else
+							{
+								if (!session.isSessionDelete) {
+									all_user_sessions[session_key] = session;
+								}
+								// Если была команда удаления текущей сессии
+								else if (all_user_sessions.find(session_key) != all_user_sessions.end()) {
+									all_user_sessions.erase(session_key);
+								}
+
+								redirect_page = session.redirect_page;
+
+								page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
+
+								// Перевернуть вектор
+								std::reverse(session.output.output_data.begin(), session.output.output_data.end());
+
+								for (register u_int mn = 0; mn < session.output.output_data.size(); mn++) {
+									page_object.all_lines.insert(page_object.all_lines.begin() + i, session.output.output_data[mn]);
+								}
+
+								// Копирование всех данных если была вызвана функция include
+								if (_session != nullptr)
+								{
+									_session->mysql_connections = session.mysql_connections;
+									_session->all_data = session.all_data;
+									_session->all_data_buffer = session.all_data_buffer;
+									_session->definition_functions = session.definition_functions;
+
+									for (register u_int o_i = 0; o_i < page_object.all_lines.size(); o_i++)
+										_session->output.output_data.push_back(page_object.all_lines[o_i]);
+								}
+							}
+
+							count_lines_of_file = page_object.all_lines.size();
+							isEndFound = true;
+							break;
 						}
-						// Иначе выделяется память под данную сессию
-						else all_user_sessions[session_key] = session;
+						if (redirect_page != EMPTY)
+							break;
 					}
-					// Иначе если в памяти нету сессии с таким ключом
-					else
-					{ 
-						// Если клиент зашел впервые - генерируется новый ключ сессии
-						if (_session == nullptr || _session == nullptr && _session->session_key == EMPTY)
-						{
-							session_key = generate_session_key();
-						}
-						// Если данная функция была вызвана путем команды include (т.к в параметре request будет пусто)
-						// То скопировать все данные сессии из предыдущего вызова данной функции
-						else if(_session != nullptr)
-						{
-							session_key = _session->session_key;
-							session.all_data = all_user_sessions[session_key].all_data;
-							session.all_data_buffer = all_user_sessions[session_key].all_data_buffer;
-							session.mysql_connections = all_user_sessions[session_key].mysql_connections;
-						} 
-					}
-					session.session_key = session_key;
-					// Запись названия текущего файла
-					session.set_file_name(page_object.getName());							
-
-					Instruction global_data = parse_global_data(request);
-					// Удаление всех данных с именем _post и _get
-					std::map<std::string, Instruction>::iterator iter = session.all_data.find("_post");
-					if (iter != session.all_data.end())
-						session.all_data.erase(iter);
-					iter = session.all_data.find("_get");
-					if (iter != session.all_data.end())
-						session.all_data.erase(iter);
-					// Если были переданы GLOBAL параметры, то записать их
-					if (global_data.body == "_post" && _session == nullptr) session.all_data["_post"] = global_data;
-					else if (global_data.body == "_get" && _session == nullptr) session.all_data["_get"] = global_data;
-					else if (global_data.body == EMPTY) session.all_data[global_data.body] = global_data;
-					all_user_sessions[session_key].all_data = session.all_data;
-
-					// Если существуют статические данные, то скопировать их в текущую сессию
-					if (static_data.size() > 0)
-						session.all_data.insert(static_data.begin(), static_data.end());
-
-					// Копирование всех данных если была вызвана функция include
-					if (_session != nullptr)
-					{
-						session.mysql_connections = _session->mysql_connections;
-						session.all_data = _session->all_data;
-						session.all_data_buffer = _session->all_data_buffer;
-						session.definition_functions = _session->definition_functions;
-					}					
-
-					// Выполнение скрипта
-					read_script(session, page_object, i + 1, j + 1);
-				
-					if (!session.isSessionDelete)
-						all_user_sessions[session_key] = session;
-					// Если была команда удаления текущей сессии
-					else if (all_user_sessions.find(session_key) != all_user_sessions.end())
-						all_user_sessions.erase(session_key);
-
-					// Если была синтаксическая ошибка - показать сообщение ошибки
-					if (session.error != nullptr)
-					{
-						page_object.all_lines.clear();
-						page_object.all_lines.push_back(session.error->get_error_text());
-						isError = true;
+					if (isError || redirect_page != EMPTY) {
 						break;
 					}
-					// Иначе заменить исполняемый скрипт на результат работы скрипта
-					else
-					{
-						redirect_page = session.redirect_page;
-
-						page_object.all_lines.erase(page_object.all_lines.begin() + i, page_object.all_lines.begin() + j + 1);
-
-						// Перевернуть вектор
-						std::reverse(session.output.output_data.begin(), session.output.output_data.end());
-
-						for (register unsigned int mn = 0; mn < session.output.output_data.size(); mn++)
-							page_object.all_lines.insert(page_object.all_lines.begin() + i, session.output.output_data[mn]);
-
-						// Копирование всех данных если была вызвана функция include
-						if (_session != nullptr)
-						{
-							_session->mysql_connections = session.mysql_connections;
-							_session->all_data = session.all_data;
-							_session->all_data_buffer = session.all_data_buffer;
-							_session->definition_functions = session.definition_functions;
-
-							for (register u_int o_i = 0; o_i < page_object.all_lines.size(); o_i++)
-								_session->output.output_data.push_back(page_object.all_lines[o_i]);
-						}
+					if (isEndFound) {
+						isEndFound = false;
+						break;
 					}
-
-					count_lines_of_file = page_object.all_lines.size();
-					break;
 				}
-				if (redirect_page != EMPTY)
-					break;
+
+				break;
 			}
 
-			if (isError)
+			if (redirect_page != EMPTY || isError)
 				break;
 		}
-		if (redirect_page != EMPTY)
+		if (isError || redirect_page != EMPTY) {
 			break;
+		}
 	}
 
-	if (_session != nullptr && !isError) return;
-
-	std::string body = EMPTY;
-	std::string header;
-
-	if (redirect_page != EMPTY)
-	{
-		header += "HTTP/1.1 302 OK\r\n";
-		header += "Server: LogosServer / 1.0 (Win64)\r\n";
-		header += "X-Powered-By: Logos / 1.0\r\n";
-		header += "Location: " + redirect_page + "\r\n";
+	// Если было перенаправление - вернуть страницу на которую идет перенаправление
+	if (redirect_page != EMPTY) {
+		return redirect_page;
 	}
-	else
-	{
-		unsigned int count_line_of_page = page_object.all_lines.size();
-		for (unsigned register int i = 0; i < count_line_of_page; i++)
-			body += page_object.all_lines[i];
-
-		header += "HTTP/1.1 200 OK\r\n";
-		header += "Server: LogosServer / 1.0 (Win64)\r\n";
-		header += "X-Powered-By: Logos / 1.0\r\n";
-		header += "Content-Length: " + std::to_string(body.length()) + "\r\n";
-		header += "Keep-Alive: timeout=5, max=86\r\n";
-		header += "Cache-Control: no-cache; no-store; must-revalidate\r\n";
-		header += "Connection: Keep-Alive\r\n";
-		header += "Content-Type: text/html; charset=UTF-8\r\n";
-		header += "Set-Cookie: SESSION=" + session_key + "\r\n";
-		header += "Content-Language: ru-RU\r\n";
-		header += "\r\n\r\n";
+	// Иначе вернуть строку 22 в виде байт
+	else {
+		if (server != nullptr) {
+			server->set_logosid(session_key);
+		}
+		return "[\x32\x32]";
 	}
-	std::string response = header + body;
-	send(client_socket, response.c_str(), response.length(), 0);
-	closesocket(client_socket);
 }
 
 std::string format_data(std::string data)
@@ -410,7 +256,7 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 	TYPE_OF_INSTRUCTION_FOR_PARSER last_type_of_instruction = TYPE_OF_INSTRUCTION_FOR_PARSER::SPACE;
 
 	// Определение команд
-	for (unsigned register int i = start; i < end - 1; i++)
+	for (unsigned register int i = start; i <= end; i++)
 	{
 		all_lines_length = page_object.all_lines[i].length();
 		session.lines.push_back(LineInstructions { } );
@@ -549,6 +395,14 @@ std::string check_correct_syntax(LineInstructions &line)
 			continue;
 		}
 		if (line.instructions[i].type_of_instruction == line.instructions[i - 1].type_of_instruction ) {
+			
+			// Если это оператор "-", то проверить является ли он оператором разности
+			// Если оператор показывает знак числа, то ошибки нет и пропустить дальнейшую проверку
+			if (i + 1 < line.instructions.size() && line.instructions[i].body == "-"
+				&& line.instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
+				continue;
+			}
+
 			// Ошибка.
 			result = "wrong syntax between " + line.instructions[i - 1].body + " and " + line.instructions[i].body;
 			break;
@@ -564,6 +418,13 @@ std::string check_correct_syntax(LineInstructions &line)
 				&& line.instructions[i + 1].body != "{"
 				&& line.instructions[i + 1].body != "++"
 				&& line.instructions[i + 1].body != "--") {
+
+				// Если это оператор "-", то проверить является ли он оператором разности
+				// Если оператор показывает знак числа, то ошибки нет и пропустить дальнейшую проверку
+				if (i + 2 < line.instructions.size() && line.instructions[i + 1].body == "-"
+					&& line.instructions[i + 2].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
+					continue;
+				}
 
 				// Ошибка.
 				result = "wrong syntax between " + line.instructions[i].body + " and " + line.instructions[i + 1].body;
@@ -751,7 +612,11 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 										if (session.lines[i].instructions[j + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
 											tmp.set_params(session.lines[i].instructions[j + 1]);
 										}
+										std::string current_cmd = session.lines[i].instructions[j + 1].body;
 										session.lines[i].instructions.erase(session.lines[i].instructions.begin() + j + 1);
+										if (current_cmd == ")") {
+											break;
+										}
 									}
 
 									// Переход на исполнение системной функции

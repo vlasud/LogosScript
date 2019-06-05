@@ -21,7 +21,6 @@
     </div> 
 
 <#
-	text = null	
 	if(!is_null(_post["l_button"]))
 		text = "SELECT * FROM users WHERE login = '" + _post["l_login"] + "' AND BINARY pass = '" + _post["l_password"] + "' LIMIT 1"
 		result = query(connection, text)
@@ -40,7 +39,7 @@
     text += "<a href='ads.lgs'>Объявления</a>"
     text += "<a href='help.lgs'>Помощь</a>"
 
-	if(is_null(local_user_info)))
+	if(is_null(local_user_info))
         header += "<div class='header'>"
 		text += "<a href='#' onclick='showModalWin()'>Войти</a>"
 	else

@@ -2,7 +2,9 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <experimental/filesystem>
 #include <vector>
+#include <stdio.h>
 #include <map>
 #include <iostream>
 #include <string>
@@ -20,9 +22,13 @@
 #include "Interpreter.h"
 #include "FunctionsCore.h"
 #include "Session.h"
+#include "Server.h"
 
 #define EMPTY ""
 
+namespace fs = std::experimental::filesystem;
+
+const std::string LOGOS_VERSION = "2.2";
 
 // Вектор названий загруженных файлов сайта
 extern std::vector<Page> all_pages;
@@ -32,7 +38,7 @@ extern std::map<std::string, Instruction> static_data;
 extern std::map<std::string, Session> all_user_sessions;
 
 
-void interpreter_start(const SOCKET client_socket, const int file_id, const std::string request, Session* _session = nullptr);
+std::string interpreter_start(const SOCKET client_socket, Page &page_object, Server *server, Session* _session = nullptr);
 void read_script(Session &session, Page &page_object, const unsigned int start, const unsigned int end);
 void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData = false, FunctionDefinition *func = nullptr, bool isCommand = false);
 void do_line_script_operators(Session &session, const unsigned int line, const unsigned int begin, unsigned int end);

@@ -14,13 +14,13 @@ enum TYPE_OF_INSTRUCTION_FOR_PARSER {_WORD, _OPERATOR, SPACE};
 // Перечисление типов данных
 enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 //
-//struct MySQL
-//{
-//	 //Подключение
-//	MYSQL *connection;
-//	 //Инициализация
-//	MYSQL mysql_init;	
-//};
+struct MySQL
+{
+	 //Подключение
+	//MYSQL *connection;
+	// //Инициализация
+	//MYSQL mysql_init;	
+};
 
 
 class Instruction
@@ -38,6 +38,8 @@ public:
 	std::string data;
 	// Статика данных
 	bool isVariable;
+	// Поток байтов
+	std::vector<char> stream;
 	// Вектор инструкицй (если это массив)
 	std::vector<Instruction> array;
 	// Мап инструкицй (если это массив)

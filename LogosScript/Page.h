@@ -23,6 +23,10 @@ public:
 	// Вектор строк файла
 	std::vector<std::string> all_lines;
 
+	Page(void) {
+
+	}
+
 	Page(const std::string path)
 		// В конструкторе происходит загрузка всех строк файла в ОЗУ
 	{
@@ -40,16 +44,47 @@ public:
 		get_type_of_file();
 	}
 
-	std::string getName(void)
+	std::string getName(void) const
 		// Получение имени файла
 	{
 		return name;
 	}
 
-	std::string getType(void)
+	std::string getType(void) const
 		// Получение расширение файла
 	{
 		return type_of_file;
+	}
+
+	std::string get_body_as_text(void) const
+	// Получение содержимое файла в виде текста
+	{
+		std::string body = "";
+		for (register u_int i = 0; i < all_lines.size(); i++) {
+			body += all_lines[i];
+		}
+		return body;
+	}
+	std::string get_body_as_bytes(void) const
+		// Получение содержимое файла в виде байт
+	{
+		std::string body;
+		std::vector<char> bytes;
+
+		std::ifstream binary_file("Source" + this->name, std::ios_base::binary);
+		if (binary_file){
+			char ch;
+			while (binary_file.get(ch)) {
+				bytes.push_back(ch);
+			}
+		}
+		binary_file.close();
+
+		for (int z = 0; z < bytes.size(); z++) {
+			body += bytes[z];
+		}
+		
+		return body;
 	}
 	
 };

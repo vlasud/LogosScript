@@ -1,7 +1,8 @@
 <#
+  include("/connect.lgs")
+
   if(!is_null(_post["h_button"]))
-    text = null
-    text += "INSERT INTO orders (name, phone_number, idRealty) VALUES ('"
+    text = "INSERT INTO orders (name, phone_number, idRealty) VALUES ('"
     text += _post["h_name"] + "','" + _post["h_phone_number"] + "','" + realty_array[int(_get["idRealty"])]["idRealty"] + "')"
     query(connection, text)
     
@@ -64,6 +65,8 @@
         text += "<button onclick='showModalWinOrder()'>Связаться с нами</button>"
         text += "</div>"
         write(text)
+
+    close(connection)
 #>
             
             

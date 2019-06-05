@@ -1,11 +1,9 @@
 <#
+	const host 		= "localhost"
+	const database 	= "agentstvo"
+	const user 		= "root"
+	const password 	= ""
 
-	if(is_null(connection))
-		const host 		= "localhost"
-		const database 	= "agentstvo"
-		const user 		= "root"
-		const password 	= ""
-
-		connection = connect(host, database, user, password)
+	connection = connect(host, database, user, password)
 
 #>

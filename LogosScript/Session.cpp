@@ -1,9 +1,12 @@
 #include "Global.h"
 
-Session::Session(void) {}
+Session::Session(void) {
+	this->error = nullptr;
+}
 
 Session::Session(const u_int start_line, const SOCKET client_socket)
 {
+	this->error = nullptr;
 	this->start_line = start_line;
 	this->client_socket = client_socket;
 }

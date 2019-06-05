@@ -545,7 +545,7 @@ void typeof(SystemFunction *object)
 	result.type_of_data = TYPE_OF_DATA::_STRING;
 	*res = result;
 }
-
+//
 //void mysql_connect(SystemFunction *object)
 //// Соединение с базой данных MySQL
 //// 4 параметра
@@ -588,6 +588,12 @@ void typeof(SystemFunction *object)
 //	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
 //	mysql_close(connection->connection);
 //
+//	// Если нет подключения с таким id - Ошибка
+//	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
+//		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
+//		return;
+//	}
+//
 //	delete(object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())]);
 //	object->get_session()->mysql_connections.erase(object->get_session()->mysql_connections.begin() + atoi(instructions[0].data.c_str()));
 //
@@ -618,6 +624,12 @@ void typeof(SystemFunction *object)
 //	Instruction *res = &object->get_result_instruction();
 //	const std::vector<Instruction> &instructions = object->get_instructions();
 //	Instruction result = instructions[0];
+//
+//	// Если нет подключения с таким id - Ошибка
+//	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
+//		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
+//		return;
+//	}
 //
 //	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
 //	
@@ -691,7 +703,8 @@ void include(SystemFunction *object)
 	{
 		if (all_pages[i].getName() == file_name)
 		{
-			interpreter_start(object->get_session()->get_client_socket(), i, EMPTY, object->get_session());
+			Page tmp_page = all_pages[i];
+			interpreter_start(object->get_session()->get_client_socket(), tmp_page, nullptr, object->get_session());
 			break;
 		}
 		else if (i == all_pages_size - 1)
@@ -904,6 +917,86 @@ void abs(SystemFunction *object)
 	}
 	if (result.data[0] == '-')
 		result.data.erase(0, 1);
+
+	*res = result;
+}
+
+void create_file(SystemFunction *object)
+// Создание файла
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	// Если поток пустой - создать пустой текстовый файл
+	if (result.stream.size() == 0) {
+		std::ofstream file(result.data);
+		file.close();
+	}
+	else {
+		std::ofstream file(result.data, std::ios::binary);
+		for (register u_int i = 0; i < result.stream.size(); i++) {
+			file.put(result.stream[i]);
+		}
+		file.close();
+	}
+
+	*res = result;
+}
+
+void delete_file(SystemFunction *object)
+// Удаление файла
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	if (remove(result.data.c_str())) {
+		// Синтаксическая ошибка. Не удалось удалить файл
+		object->get_session()->error = new ErrorCore("failed to delete file", object->get_session());
+		return;
+	}
+
+	*res = result;
+}
+
+void is_stream(SystemFunction *object)
+// Проверка - является ли данные потоком
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+	result.type_of_data = TYPE_OF_DATA::_BOOLEAN;
+
+	result.data = (result.stream.size() == 0) ? "false" : "true";
+
+	*res = result;
+}
+
+void files_list(SystemFunction *object)
+// Список файлов в директории
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	for (const auto &entry : fs::directory_iterator(result.data)) {
+		
+		Instruction tmp;
+		tmp.type_of_instruction	= TYPE_OF_INSTRUCTION::DATA;
+		tmp.type_of_data		= TYPE_OF_DATA::_STRING;
+		tmp.data				= entry.path().filename().string();
+
+		result.array.push_back(tmp);
+	}
 
 	*res = result;
 }

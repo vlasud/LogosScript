@@ -57,6 +57,8 @@
 		array[6] = number_of_pages
 	else 
 		number_of_pages -= 1
+		if(number_of_pages < 0)
+			number_of_pages = 0
 		array[number_of_pages] = number_of_pages + 1
 
 	for(i = 0; i < 7; i++)

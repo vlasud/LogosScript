@@ -45,12 +45,12 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							{
 								// Смещение
 								int bias = atoi(session.lines[line].instructions[s].data.c_str());
-
 								if (bias < 0)
 								{
 									// Синтаксическая ошибка...
-									session.error = new ErrorCore("offset must be a positive number", &session);
+									session.error = new ErrorCore("offset must be a positive number ", &session);
 									return;
+								
 								}
 
 								// Если число выходит за пределы массива
@@ -3104,7 +3104,7 @@ void write_data_from_local_to_global(Session &session, Instruction &first, Instr
 	Instruction *to		= (first.ptr != nullptr && (first.array.size() > 0 || first.array_map.size() > 0)) ? first.ptr : &first;
 	Instruction *from	= (second.ptr != nullptr && (second.array.size() > 0 || second.array_map.size() > 0)) ? second.ptr : &second;
 
-	if (to->isConst && to->type_of_data != TYPE_OF_DATA::_NONE || first.isConst || !first.isVariable)
+	if (to->isConst && to->type_of_data != TYPE_OF_DATA::_NONE || (first.isConst && (first.type_of_data != TYPE_OF_DATA::_NONE || first.ptr != nullptr)) || !first.isVariable)
 	{
 		if (to->data == from->data) return;
 

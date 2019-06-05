@@ -1,8 +1,4 @@
 #pragma once
-
-class MySQL {
-
-};
  
 class Session
 {

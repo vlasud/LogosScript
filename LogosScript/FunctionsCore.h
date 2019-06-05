@@ -59,9 +59,9 @@ void __str(SystemFunction *object);
 void typeof(SystemFunction *object);
  //Установить связь с базой данных
 //void mysql_connect(SystemFunction *object);
-// //Прерывает связь с базой данных
+//// Прерывает связь с базой данных
 //void mysql_close(SystemFunction *object);
-// //Посылает запрос к базе данных
+//// Посылает запрос к базе данных
 //void mysql_query(SystemFunction *object);
 //Переход на другой документ
 void include(SystemFunction *object);
@@ -81,6 +81,14 @@ void redirect(SystemFunction *object);
 void roundup(SystemFunction *object);
 // Возвдедение в абсолютную велечину
 void abs(SystemFunction *object);
+// Создание файла
+void create_file(SystemFunction *object);
+// Удаление файла
+void delete_file(SystemFunction *object);
+// Проверка - есть ли поток данных у объекта
+void is_stream(SystemFunction *object);
+// Список файлов в директории
+void files_list(SystemFunction *object);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 const std::vector<SystemFunction> system_functions = 
@@ -114,4 +122,8 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"redirect", 1, redirect},
 	SystemFunction {"roundup", 1, roundup},
 	SystemFunction {"abs", 1, abs},
+	SystemFunction {"create_file", 1, create_file},
+	SystemFunction {"delete_file", 1, delete_file},
+	SystemFunction {"is_stream", 1, is_stream},
+	SystemFunction {"files_list", 1, files_list},
 };
