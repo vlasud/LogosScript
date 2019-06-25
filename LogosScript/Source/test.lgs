@@ -1,16 +1,8 @@
-	<div class="auth">
-       <h2>Авторизация</h2>
-        <form action="test.lgs" method = "POST" class="grid__auth">
-            <input type="text" name="l_login" placeholder="Логин">
-            <input type="password" name="l_password" placeholder="Пароль">
-            <input type="file" name = "r_file" multiple accept="image/*,image/jpeg">
-            <input type="submit" name="l_button" value="Ok">
-            <button class="auth-btn-close-shadow">Отмена</button>
-        </form>
-    </div> 
-
-
-<#
+﻿<#
 	
-	writeln(_post["l_login"])
+	a = 74
+	b = "26"
+
+	writeln(a + int(b))
+
 #>

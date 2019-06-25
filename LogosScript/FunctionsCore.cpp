@@ -419,7 +419,7 @@ void __int(SystemFunction *object)
 		break;
 	}
 	case TYPE_OF_DATA::_NONE:
-		// Синтаксическая ошибка
+
 		object->get_session()->error = new ErrorCore("null cannot be converted to int", object->get_session());
 		return;
 		break;
@@ -545,146 +545,146 @@ void typeof(SystemFunction *object)
 	result.type_of_data = TYPE_OF_DATA::_STRING;
 	*res = result;
 }
-//
-//void mysql_connect(SystemFunction *object)
-//// Соединение с базой данных MySQL
-//// 4 параметра
-//// [хост, имя базы, пользователь, пароль]
-//{
-//	Instruction *res = &object->get_result_instruction();
-//	const std::vector<Instruction> &instructions = object->get_instructions();
-//	Instruction result = instructions[0];
-//
-//	MySQL *new_mysql_connection = new MySQL();
-//
-//	mysql_init(&new_mysql_connection->mysql_init);
-//	new_mysql_connection->connection = mysql_real_connect(&new_mysql_connection->mysql_init, instructions[0].data.c_str(), instructions[2].data.c_str(),
-//		instructions[3].data.c_str(), instructions[1].data.c_str(), 3306, 0, 0);
-//
-//	// Если не удалось соединиться с базой данных
-//	if (new_mysql_connection->connection == NULL)
-//	{
-//		object->get_session()->error = new ErrorCore(mysql_error(new_mysql_connection->connection), object->get_session());
-//		return;
-//	}
-//
-//	object->get_session()->mysql_connections.push_back(new_mysql_connection);
-//
-//	result.type_of_data = TYPE_OF_DATA::_INT;
-//	result.data = std::to_string(object->get_session()->mysql_connections.size() - 1);
-//
-//	*res = result;
-//}
-//
-//void mysql_close(SystemFunction *object)
-//// Прерывает соединение с базой данных MySQL
-//// 1 параметр
-//// [id соединения]
-//{
-//	Instruction *res = &object->get_result_instruction();
-//	const std::vector<Instruction> &instructions = object->get_instructions();
-//	Instruction result = instructions[0];
-//
-//	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
-//	mysql_close(connection->connection);
-//
-//	// Если нет подключения с таким id - Ошибка
-//	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
-//		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
-//		return;
-//	}
-//
-//	delete(object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())]);
-//	object->get_session()->mysql_connections.erase(object->get_session()->mysql_connections.begin() + atoi(instructions[0].data.c_str()));
-//
-//	if (result.isStatic)
-//	{
-//		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
-//		return;
-//	}
-//	object->get_session()->all_data.erase(result.body);
-//	if (object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
-//		object->get_session()->all_data_buffer.erase(result.body);
-//
-//	if (result.isStatic)
-//	{
-//		if (static_data.find(result.body) != static_data.end())
-//			static_data.erase(result.body);
-//	}
-//
-//
-//	*res = result;
-//}
-//
-//void mysql_query(SystemFunction *object)
-//// Посылает запрос к базе данных
-//// 2 параметра
-//// [id соединения, запрос]
-//{
-//	Instruction *res = &object->get_result_instruction();
-//	const std::vector<Instruction> &instructions = object->get_instructions();
-//	Instruction result = instructions[0];
-//
-//	// Если нет подключения с таким id - Ошибка
-//	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
-//		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
-//		return;
-//	}
-//
-//	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
-//	
-//	int state_of_query = mysql_query(connection->connection, instructions[1].data.c_str());
-//
-//	// Если произошла ошибка в заросе
-//	if (state_of_query != 0)
-//	{
-//		object->get_session()->error = new ErrorCore(mysql_error(connection->connection), object->get_session());
-//		return;
-//	}
-//
-//	MYSQL_RES *result_of_query = mysql_store_result(connection->connection);
-//	if (result_of_query != nullptr && mysql_num_rows(result_of_query) > 0)
-//	{
-//		result.array.clear();
-//
-//		MYSQL_ROW row;
-//
-//		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
-//		
-//		int num_of_index = -1;
-//
-//		while ((row = mysql_fetch_row(result_of_query)) != NULL)
-//		{
-//			num_of_index = -1;
-//			Instruction inst;
-//			inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-//			inst.type_of_data = TYPE_OF_DATA::_STRING;
-//
-//			for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
-//			{
-//				Instruction new_instruction;
-//				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
-//				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
-//
-//				new_instruction.data = (row[i] != NULL) ? row[i] : "null";
-//
-//				inst.array_map[fields[++num_of_index].name] = new_instruction;
-//				inst.array.push_back(new_instruction);
-//			}
-//			result.array.push_back(inst);
-//		}
-//	}
-//	else
-//	{
-//		result.type_of_data = TYPE_OF_DATA::_NONE;
-//		result.data = "null";
-//		result.array.clear();
-//		result.array_map.clear();
-//	}
-//	mysql_free_result(result_of_query);
-//
-//	*res = result;
-//}
+
+void mysql_connect(SystemFunction *object)
+// Соединение с базой данных MySQL
+// 4 параметра
+// [хост, имя базы, пользователь, пароль]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	MySQL *new_mysql_connection = new MySQL();
+
+	mysql_init(&new_mysql_connection->mysql_init);
+	new_mysql_connection->connection = mysql_real_connect(&new_mysql_connection->mysql_init, instructions[0].data.c_str(), instructions[2].data.c_str(),
+		instructions[3].data.c_str(), instructions[1].data.c_str(), 3306, 0, 0);
+
+	// Если не удалось соединиться с базой данных
+	if (new_mysql_connection->connection == NULL)
+	{
+		object->get_session()->error = new ErrorCore(mysql_error(new_mysql_connection->connection), object->get_session());
+		return;
+	}
+
+	object->get_session()->mysql_connections.push_back(new_mysql_connection);
+
+	result.type_of_data = TYPE_OF_DATA::_INT;
+	result.data = std::to_string(object->get_session()->mysql_connections.size() - 1);
+
+	*res = result;
+}
+
+void mysql_close(SystemFunction *object)
+// Прерывает соединение с базой данных MySQL
+// 1 параметр
+// [id соединения]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
+	mysql_close(connection->connection);
+
+	// Если нет подключения с таким id - Ошибка
+	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
+		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
+		return;
+	}
+
+	delete(object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())]);
+	object->get_session()->mysql_connections.erase(object->get_session()->mysql_connections.begin() + atoi(instructions[0].data.c_str()));
+
+	if (result.isStatic)
+	{
+		object->get_session()->error = new ErrorCore("static data cannot be deleted", object->get_session());
+		return;
+	}
+	object->get_session()->all_data.erase(result.body);
+	if (object->get_session()->all_data_buffer.find(result.body) != object->get_session()->all_data_buffer.end())
+		object->get_session()->all_data_buffer.erase(result.body);
+
+	if (result.isStatic)
+	{
+		if (static_data.find(result.body) != static_data.end())
+			static_data.erase(result.body);
+	}
+
+
+	*res = result;
+}
+
+void mysql_query(SystemFunction *object)
+// Посылает запрос к базе данных
+// 2 параметра
+// [id соединения, запрос]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	// Если нет подключения с таким id - Ошибка
+	if (object->get_session()->mysql_connections.size() <= atoi(result.data.c_str())) {
+		object->get_session()->error = new ErrorCore("no connection with such id", object->get_session());
+		return;
+	}
+
+	MySQL *connection = object->get_session()->mysql_connections[atoi(instructions[0].data.c_str())];
+	
+	int state_of_query = mysql_query(connection->connection, instructions[1].data.c_str());
+
+	// Если произошла ошибка в заросе
+	if (state_of_query != 0)
+	{
+		object->get_session()->error = new ErrorCore(mysql_error(connection->connection), object->get_session());
+		return;
+	}
+
+	MYSQL_RES *result_of_query = mysql_store_result(connection->connection);
+	if (result_of_query != nullptr && mysql_num_rows(result_of_query) > 0)
+	{
+		result.array.clear();
+
+		MYSQL_ROW row;
+
+		MYSQL_FIELD *fields = mysql_fetch_fields(result_of_query);
+		
+		int num_of_index = -1;
+
+		while ((row = mysql_fetch_row(result_of_query)) != NULL)
+		{
+			num_of_index = -1;
+			Instruction inst;
+			inst.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+			inst.type_of_data = TYPE_OF_DATA::_STRING;
+
+			for (register u_int i = 0; i < mysql_num_fields(result_of_query); i++)
+			{
+				Instruction new_instruction;
+				new_instruction.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
+				new_instruction.type_of_data = TYPE_OF_DATA::_STRING;
+
+				new_instruction.data = (row[i] != NULL) ? row[i] : "null";
+
+				inst.array_map[fields[++num_of_index].name] = new_instruction;
+				inst.array.push_back(new_instruction);
+			}
+			result.array.push_back(inst);
+		}
+	}
+	else
+	{
+		result.type_of_data = TYPE_OF_DATA::_NONE;
+		result.data = "null";
+		result.array.clear();
+		result.array_map.clear();
+	}
+	mysql_free_result(result_of_query);
+
+	*res = result;
+}
 
 void include(SystemFunction *object)
 // Переход на другой документ
@@ -923,8 +923,8 @@ void abs(SystemFunction *object)
 
 void create_file(SystemFunction *object)
 // Создание файла
-// 1 параметр
-// [объект]
+// 2 параметр
+// [объект, путь]
 {
 	Instruction *res = &object->get_result_instruction();
 	const std::vector<Instruction> &instructions = object->get_instructions();
@@ -936,12 +936,26 @@ void create_file(SystemFunction *object)
 		file.close();
 	}
 	else {
-		std::ofstream file(result.data, std::ios::binary);
+		std::ofstream file(instructions[1].data, std::ios::binary);
 		for (register u_int i = 0; i < result.stream.size(); i++) {
 			file.put(result.stream[i]);
 		}
 		file.close();
 	}
+
+	*res = result;
+}
+
+void create_dir(SystemFunction *object)
+// Создание директории
+// 1 параметр
+// [объект]
+{
+	Instruction *res = &object->get_result_instruction();
+	const std::vector<Instruction> &instructions = object->get_instructions();
+	Instruction result = instructions[0];
+
+	_mkdir(result.data.c_str());
 
 	*res = result;
 }

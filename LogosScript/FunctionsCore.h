@@ -58,11 +58,11 @@ void __str(SystemFunction *object);
 // Получить тип данных объекта
 void typeof(SystemFunction *object);
  //Установить связь с базой данных
-//void mysql_connect(SystemFunction *object);
-//// Прерывает связь с базой данных
-//void mysql_close(SystemFunction *object);
-//// Посылает запрос к базе данных
-//void mysql_query(SystemFunction *object);
+void mysql_connect(SystemFunction *object);
+// Прерывает связь с базой данных
+void mysql_close(SystemFunction *object);
+// Посылает запрос к базе данных
+void mysql_query(SystemFunction *object);
 //Переход на другой документ
 void include(SystemFunction *object);
 // Есть ли данные
@@ -83,6 +83,8 @@ void roundup(SystemFunction *object);
 void abs(SystemFunction *object);
 // Создание файла
 void create_file(SystemFunction *object);
+// Создание директории
+void create_dir(SystemFunction *object);
 // Удаление файла
 void delete_file(SystemFunction *object);
 // Проверка - есть ли поток данных у объекта
@@ -110,9 +112,9 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"bool", 1, __bool},
 	SystemFunction {"str", 1, __str},
 	SystemFunction {"typeof", 1, typeof},
-	/*SystemFunction {"connect", 4, mysql_connect},
+	SystemFunction {"connect", 4, mysql_connect},
 	SystemFunction {"close", 1, mysql_close},
-	SystemFunction {"query", 2, mysql_query},*/
+	SystemFunction {"query", 2, mysql_query},
 	SystemFunction {"include", 1, include},
 	SystemFunction {"is_null", 1, is_null},
 	SystemFunction {"del_session", 0, del_session},
@@ -122,7 +124,8 @@ const std::vector<SystemFunction> system_functions =
 	SystemFunction {"redirect", 1, redirect},
 	SystemFunction {"roundup", 1, roundup},
 	SystemFunction {"abs", 1, abs},
-	SystemFunction {"create_file", 1, create_file},
+	SystemFunction {"create_file", 2, create_file},
+	SystemFunction {"create_dir", 1, create_dir},
 	SystemFunction {"delete_file", 1, delete_file},
 	SystemFunction {"is_stream", 1, is_stream},
 	SystemFunction {"files_list", 1, files_list},

@@ -17,7 +17,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 	for (register int i = begin; i <= end; i++)
 	{
 		if (i >= session.lines[line].instructions.size()) break; // <------ Костыль
-
+		
 		if (session.lines[line].instructions[i].type_of_instruction == TYPE_OF_INSTRUCTION::OPERATOR)
 		{
 			Instruction &tmp = session.lines[line].instructions[i];
@@ -237,7 +237,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				{
 				case TYPE_OF_DATA::_INT:
 				{
-					session.lines[line].instructions[i + 1].data = (atoi(session.lines[line].instructions[i + 1].data.c_str()) > 0) ? "true" : "false";
+					session.lines[line].instructions[i + 1].data = (atoi(session.lines[line].instructions[i + 1].data.c_str()) > 0) ? "false" : "true";
 					session.lines[line].instructions[i + 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
@@ -246,7 +246,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				case TYPE_OF_DATA::_DOUBLE:
 				{
-					session.lines[line].instructions[i + 1].data = (atof(session.lines[line].instructions[i + 1].data.c_str()) > 0) ? "true" : "false";
+					session.lines[line].instructions[i + 1].data = (atof(session.lines[line].instructions[i + 1].data.c_str()) > 0) ? "false" : "true";
 					session.lines[line].instructions[i + 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
@@ -352,7 +352,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							last_value = session.lines[line].instructions[i - 1];
 							tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1);
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-							session.lines[line].instructions[i - 1] = last_value;
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
@@ -361,7 +360,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							last_value = session.lines[line].instructions[i - 1];
 							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) + 1);
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);		
-							session.lines[line].instructions[i - 1] = last_value;
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
@@ -370,7 +368,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							last_value = session.lines[line].instructions[i - 1];
 							tmp.data = "true";
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-							session.lines[line].instructions[i - 1] = last_value;
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
@@ -379,7 +376,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							last_value = session.lines[line].instructions[i - 1];
 							tmp.data = session.lines[line].instructions[i - 1].data + "1";
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-							session.lines[line].instructions[i - 1] = last_value;
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
@@ -389,7 +385,6 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							tmp.data = "1";
 							tmp.type_of_data = TYPE_OF_DATA::_INT;
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-							session.lines[line].instructions[i - 1] = last_value;
 							break;
 						}
 					}
@@ -468,7 +463,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						last_value = session.lines[line].instructions[i - 1];
 						tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) - 1);
 						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-						session.lines[line].instructions[i - 1] = last_value;
+						session.lines[line].instructions[i - 1].data = last_value.data;
 						break;
 					}
 					case TYPE_OF_DATA::_DOUBLE:
@@ -477,7 +472,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						last_value = session.lines[line].instructions[i - 1];
 						tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) - 1);
 						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-						session.lines[line].instructions[i - 1] = last_value;
+						session.lines[line].instructions[i - 1].data = last_value.data;
 						break;
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
@@ -486,7 +481,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						last_value = session.lines[line].instructions[i - 1];
 						tmp.data = "false";
 						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-						session.lines[line].instructions[i - 1] = last_value;
+						session.lines[line].instructions[i - 1].data = last_value.data;
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
@@ -495,7 +490,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						last_value = session.lines[line].instructions[i - 1];
 						tmp.data = session.lines[line].instructions[i - 1].data + "0";
 						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
-						session.lines[line].instructions[i - 1] = last_value;
+						session.lines[line].instructions[i - 1].data = last_value.data;
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
@@ -509,7 +504,7 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						break;
 					}
 					}
-					write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+					//write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
 					session.lines[line].instructions.erase(session.lines[line].instructions.begin() + i);
 					end--;
 				}
@@ -2185,44 +2180,49 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
 								+ atoi(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								+ atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
 							if (session.lines[line].instructions[i - 1].data == "true")
 							{
-								session.lines[line].instructions[i - 1].data = atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1;
+								Instruction tmp;
+								tmp.data = atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1;
 								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_INT;
 
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_INT;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2234,19 +2234,21 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								+ atof(session.lines[line].instructions[i + 1].data.c_str()));
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(std::stof(session.lines[line].instructions[i - 1].data)
+							Instruction tmp;
+							tmp.data = std::to_string(std::stof(session.lines[line].instructions[i - 1].data)
 								+ std::stof(session.lines[line].instructions[i + 1].data));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
@@ -2254,24 +2256,27 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							if (session.lines[line].instructions[i - 1].data == "true")
 							{
 								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
-								session.lines[line].instructions[i - 1].data = atof(session.lines[line].instructions[i - 1].data.c_str()) + 1;
+								Instruction tmp;
+								tmp.data = atof(session.lines[line].instructions[i - 1].data.c_str()) + 1;
 
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2283,41 +2288,49 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							if (session.lines[line].instructions[i + 1].data == "true")
-								session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1);
+							if (session.lines[line].instructions[i + 1].data == "true") {
+								Instruction tmp;
+								tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) + 1);
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
+							}
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							if (session.lines[line].instructions[i + 1].data == "true")
-								session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) + 1);
+							if (session.lines[line].instructions[i + 1].data == "true") {
+								Instruction tmp;
+								tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) + 1);
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
+							}
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							if (session.lines[line].instructions[i + 1].data == "true")
-								session.lines[line].instructions[i - 1].data = "true";
+							if (session.lines[line].instructions[i + 1].data == "true") {
+								Instruction tmp;
+								tmp.data = "true";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
+							}
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2329,41 +2342,46 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2371,9 +2389,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+						Instruction tmp;
+						tmp.data = session.lines[line].instructions[i + 1].data;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2399,40 +2418,45 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
+						Instruction tmp;
+						tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
 							- atoi(session.lines[line].instructions[i + 1].data.c_str()));
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+						Instruction tmp;
+						tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 							- atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
 						if (atoi(session.lines[line].instructions[i - 1].data.c_str()) != 0)
 						{
-							session.lines[line].instructions[i - 1].data = "false";
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = "false";
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						}
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i - 1].data.substr(0,
+						Instruction tmp;
+						tmp.data = session.lines[line].instructions[i - 1].data.substr(0,
 							atoi(session.lines[line].instructions[i - 1].data.c_str()));
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						Instruction tmp;
+						tmp.data = "null";
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2445,43 +2469,48 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+						Instruction tmp;
+						tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 							- atof(session.lines[line].instructions[i + 1].data.c_str()));
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+						Instruction tmp;
+						tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 							- atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
 						if (atoi(session.lines[line].instructions[i - 1].data.c_str()) != 0)
 						{
-							session.lines[line].instructions[i - 1].data = "false";
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = "false";
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						}
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i - 1].data.substr(0,
+						Instruction tmp;
+						tmp.data = session.lines[line].instructions[i - 1].data.substr(0,
 							atoi(session.lines[line].instructions[i - 1].data.c_str()));
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2495,8 +2524,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 						if (session.lines[line].instructions[i + 1].data == "true")
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) - 1);
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str()) - 1);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						}
 						break;
 					}
@@ -2504,8 +2534,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 						if (session.lines[line].instructions[i + 1].data == "true")
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) - 1);
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str()) - 1);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						}
 						break;
 					}
@@ -2513,24 +2544,27 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 						if (session.lines[line].instructions[i + 1].data == "true")
 						{
-							session.lines[line].instructions[i - 1].data = "true";
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = "true";
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						}
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2542,39 +2576,46 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					{
 					case TYPE_OF_DATA::_INT:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_DOUBLE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_BOOLEAN:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_STRING:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 						session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-						session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						Instruction tmp;
+						tmp.data = "null";
+
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2582,9 +2623,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 				}
 				case TYPE_OF_DATA::_NONE:
 				{
-					session.lines[line].instructions[i - 1].data = "null";
+					Instruction tmp;
+					tmp.data = "null";
 
-					write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+					write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 					break;
 				}
 				}
@@ -2606,41 +2648,46 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
 								/ atoi(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								/ atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "false";
+							Instruction tmp;
+							tmp.data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_BOOLEAN;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2652,42 +2699,47 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								/ atof(session.lines[line].instructions[i + 1].data.c_str()));
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								/ atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "false";
+							Instruction tmp;
+							tmp.data = "false";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2701,10 +2753,11 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							if (session.lines[line].instructions[i + 1].data == "false")
 							{
-								session.lines[line].instructions[i - 1].data = "null";
+								Instruction tmp;
+								tmp.data = "null";
 								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
@@ -2713,32 +2766,36 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 							if (session.lines[line].instructions[i + 1].data == "false")
 							{
 								session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
-								session.lines[line].instructions[i - 1].data = "null";
+								Instruction tmp;
+								tmp.data = "null";
 
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2750,41 +2807,46 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_NONE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2792,9 +2854,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}
@@ -2823,43 +2886,48 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atoi(session.lines[line].instructions[i - 1].data.c_str())
 								* atoi(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								* atof(session.lines[line].instructions[i + 1].data.c_str()));
 
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "true";
+							Instruction tmp;
+							tmp.data = "true";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
 							std::string temp = session.lines[line].instructions[i - 1].data;
-							for (register unsigned int m = 0; m < atoi(session.lines[line].instructions[i + 1].data.c_str()) - 1; m++)
-								session.lines[line].instructions[i - 1].data += temp;
+							Instruction tmp;
+							for (register unsigned int m = 0; m < atoi(session.lines[line].instructions[i + 1].data.c_str()); m++)
+								tmp.data += temp;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							session.all_data.find(session.lines[line].instructions[i - 1].body)->second = session.lines[line].instructions[i - 1];
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2871,42 +2939,47 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								* atof(session.lines[line].instructions[i + 1].data.c_str()));
 
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_DOUBLE;
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
+							Instruction tmp;
+							tmp.data = std::to_string(atof(session.lines[line].instructions[i - 1].data.c_str())
 								* atof(session.lines[line].instructions[i + 1].data.c_str()));
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = "true";
+							Instruction tmp;
+							tmp.data = "true";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
+							Instruction tmp;
 							for (register unsigned int i = 0; i < atoi(session.lines[line].instructions[i + 1].data.c_str()); i++)
-								session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+								tmp.data += session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
+							Instruction tmp;
+							tmp.data = "null";
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2920,8 +2993,9 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							if (session.lines[line].instructions[i + 1].data == "false")
 							{
-								session.lines[line].instructions[i - 1].data = "0";
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								Instruction tmp;
+								tmp.data = "0";
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
@@ -2929,31 +3003,35 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 							if (session.lines[line].instructions[i + 1].data == "false")
 							{
-								session.lines[line].instructions[i - 1].data = "0.0";
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								Instruction tmp;
+								tmp.data = "0.0";
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data = session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
 							if (session.lines[line].instructions[i + 1].data == "false")
 							{
-								session.lines[line].instructions[i - 1].data = "";
-								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+								Instruction tmp;
+								tmp.data = "";
+								write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							}
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
-							session.lines[line].instructions[i - 1].data = "null";
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							Instruction tmp;
+							tmp.data = "null";
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						}
@@ -2965,37 +3043,43 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 						{
 						case TYPE_OF_DATA::_INT:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_DOUBLE:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_BOOLEAN:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 							session.lines[line].instructions[i - 1].type_of_data = TYPE_OF_DATA::_STRING;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_STRING:
 						{
-							session.lines[line].instructions[i - 1].data += session.lines[line].instructions[i + 1].data;
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data + session.lines[line].instructions[i + 1].data;
 
-							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 							break;
 						}
 						case TYPE_OF_DATA::_NONE:
 						{
+							Instruction tmp;
+							tmp.data = session.lines[line].instructions[i - 1].data;
 							write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
 							break;
 						}
@@ -3004,9 +3088,10 @@ void do_line_script_operators(Session& session, const unsigned int line, const u
 					}
 					case TYPE_OF_DATA::_NONE:
 					{
-						session.lines[line].instructions[i - 1].data = "null";
+						Instruction tmp;
+						tmp.data = "null";
 
-						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], session.lines[line].instructions[i - 1]);
+						write_data_from_local_to_global(session, session.lines[line].instructions[i - 1], tmp);
 						break;
 					}
 					}

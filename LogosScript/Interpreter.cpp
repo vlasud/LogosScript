@@ -329,13 +329,6 @@ void read_script(Session &session, Page &page_object, const unsigned int start, 
 		line_counter++;
 	}
 
-	for (register u_int i = 0; i < session.lines.size(); i++) {
-		// Если на этой линии нет команд - убрать из вектора конвеер команд
-		if (session.lines[i].instructions.size() == 0) {
-			session.lines.erase(session.lines.begin() + i);
-		}
-	}
-
 	// Определение начального уровня локального пространства
 	for (register u_int i = 0; i < session.lines.size(); i++) {
 		if (session.lines[i].instructions.size() > 0) {
@@ -398,7 +391,7 @@ std::string check_correct_syntax(LineInstructions &line)
 			
 			// Если это оператор "-", то проверить является ли он оператором разности
 			// Если оператор показывает знак числа, то ошибки нет и пропустить дальнейшую проверку
-			if (i + 1 < line.instructions.size() && line.instructions[i].body == "-"
+			if (i + 1 < line.instructions.size() && (line.instructions[i].body == "-" || line.instructions[i].body == "!")
 				&& line.instructions[i + 1].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
 				continue;
 			}
@@ -452,12 +445,14 @@ void action_of_function_return(Session &session)
 void do_script(Session &session, const unsigned int begin, unsigned int end, bool isOnlyData, FunctionDefinition *func, bool isCommand)
 // Выполнение скрипта
 {
-
+	int start_line;
 	// Если происходит выполнение функции, то переместить все данные в буффер
 	// И дальше заносить данные как локальные переменные
 	// После завершения функции вернуть данные из буфера
 	if (func != nullptr)
 	{
+		start_line = func->line + 1;
+
 		session.all_data_buffer = session.all_data;
 		session.all_data.clear();
 		
@@ -467,6 +462,9 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 		for (register u_int i = 0; i < func->parametrs.size(); i++)
 			session.all_data[func->parametrs[i].body] = func->parametrs[i];
 	}
+	else {
+		start_line = session.get_start_line();
+	}
 
 	u_int start_level = session.lines[begin].namespace_level;
 
@@ -474,7 +472,12 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 	{
 
 		// Обновление номера текущей строки в файле
-		session.update_current_line(session.get_start_line() + i);
+		if (func == nullptr) {
+			session.update_current_line(start_line + i);
+		}
+		else {
+			session.update_current_line(start_line + (func->body.size() - (session.lines.size() - i)));
+		}
 
 		// Если была вызвана вызвана инструкция continue
 		if (session.isContinue)
@@ -537,8 +540,12 @@ void do_script(Session &session, const unsigned int begin, unsigned int end, boo
 								if (session.lines[i].instructions[z].type_of_instruction == TYPE_OF_INSTRUCTION::DATA) {
 									param_counter++;
 									std::string body_name = tmp->parametrs[param_counter].body;
+									bool isConst = tmp->parametrs[param_counter].isConst;
 									tmp->parametrs[param_counter] = session.lines[i].instructions[z];
 									tmp->parametrs[param_counter].body = body_name;
+									if (!isConst) {
+										tmp->parametrs[param_counter].isConst = false;
+									}
 								}
 
 							// Размер вектора lines до добавления тела функции

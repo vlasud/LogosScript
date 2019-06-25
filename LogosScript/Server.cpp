@@ -65,6 +65,7 @@ void Server::response(void) {
 		}
 		
 		// Парсинг куки
+
 		parse_cookie();
 		// Парсинг LOGOSID
 		this->logosid = parse_logosid();
@@ -85,7 +86,7 @@ void Server::response(void) {
 			header += "X-Powered-By: Logos / " + LOGOS_VERSION + "\r\n";
 			header += "Location: " + logos_result + "\r\n";
 		}
-		header += "Set-Cookie: LOGOSID=" + this->logosid;
+		header += "Set-Cookie: LOGOSID=" + this->logosid + "; expires=Fri, 31 Dec 2050 23:59:59 GMT;";
 	}
 
 	header += "\r\n\r\n";
@@ -214,7 +215,7 @@ std::map<std::string, std::string> parse_names_from_line(Server &server, const u
 			}
 			while (key[0] == ' ') {
 				key.erase(key.begin());
-			}
+			}  
 			result[key] = value;
 			key = value = EMPTY;
 			switcher = false;
@@ -287,10 +288,13 @@ void Server::parse_global_data_as_multipart(void) {
 
 			
 			if (data.length() > 0 && (data[data.length() - 1] == '\r' || data[data.length() - 1] == '\n')) {
-				data[data.length() - 1] = '\0';
+				data.erase(data.end() - 1);
+			}
+			if (data.length() > 0 && (data[data.length() - 1] == '\r' || data[data.length() - 1] == '\n')) {
+				data.erase(data.end() - 1);
 			}
 			if (key[key.length() - 1] == '\r' || key[key.length() - 1] == '\n') {
-				key[key.length() - 1] = '\0';
+				key.erase(key.end() - 1);
 			}
 
 			Instruction tmp;
@@ -300,7 +304,7 @@ void Server::parse_global_data_as_multipart(void) {
 			if (isFile) {
 				tmp.data = names.find("filename")->second;
 				if (tmp.data.length() > 0 && (tmp.data[tmp.data.length() - 1] == '\r' || tmp.data[tmp.data.length() - 1] == '\n')) {
-					tmp.data[tmp.data.length() - 1] = '\0';
+					tmp.data.erase(tmp.data.end() - 1);
 				}
 				if (bytes_data[bytes_data.size() - 1] == '\r') {
 					bytes_data.pop_back();
@@ -313,9 +317,6 @@ void Server::parse_global_data_as_multipart(void) {
 			}
 			else{
 				tmp.data = data;
-				if (tmp.data.length() > 0 && (tmp.data[tmp.data.length() - 2] == '\r' || tmp.data[tmp.data.length() - 2] == '\n')) {
-					tmp.data[tmp.data.length() - 2] = '\0';
-				}
 			}
 			if (result.array_map.find(key) != result.array_map.end()) {
 				if (result.array_map[key].array.size() == 0) {

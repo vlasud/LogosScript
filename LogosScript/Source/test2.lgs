@@ -1,7 +1,9 @@
+<h1>dsad</h1>
+
 <#
 
-	fun _len(array, a)
-		writeln(array[1])
-		writeln(a)
-		writeln(array[0] + a)
+	fun fact(num)
+		if(num == 1)
+			ret 1
+		ret num * fact(num - 1)
 #>

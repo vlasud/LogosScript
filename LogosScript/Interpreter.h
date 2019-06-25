@@ -17,9 +17,9 @@ enum TYPE_OF_DATA {_INT, _STRING, _DOUBLE, _BOOLEAN, _NONE};
 struct MySQL
 {
 	 //Ïîäêëş÷åíèå
-	//MYSQL *connection;
-	// //Èíèöèàëèçàöèÿ
-	//MYSQL mysql_init;	
+	MYSQL *connection;
+	 //Èíèöèàëèçàöèÿ
+	MYSQL mysql_init;	
 };
 
 
@@ -103,14 +103,18 @@ struct FunctionDefinition
 	Instruction result;
 	// Åñëè áûëà âûçâàíà èíñòğóêöèÿ return
 	bool isReturn;
+	// Ñòğîêà, íà êîòîğîé íàõîäèòñÿ íà÷àëî ôóíêöèè
+	u_int line;
 
-	FunctionDefinition()
+	FunctionDefinition(){}
+	FunctionDefinition(const u_int line)
 	{
 		this->result.type_of_instruction = TYPE_OF_INSTRUCTION::DATA;
 		this->result.type_of_data = TYPE_OF_DATA::_NONE;
 		this->result.data = "null";
 
 		this->isReturn = false;
+		this->line = line;
 	}
 };
 

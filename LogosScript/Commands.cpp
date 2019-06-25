@@ -173,6 +173,9 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 									session.isBreak = false;
 									return true;
 								}
+								else if (session.error != nullptr) {
+									return true;
+								}
 							}
 							else {
 								session.error = new ErrorCore("command 'while' must contain body", &session);
@@ -261,6 +264,9 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 							session.isBreak = false;
 							return true;
 						}
+						else if (session.error != nullptr) {
+							return true;
+						}
 					}
 					else {
 						session.error = new ErrorCore("command 'for' must contain body", &session);
@@ -273,7 +279,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 			}
 			else if (temp.body == "fun")
 			{
-				FunctionDefinition new_function;
+				FunctionDefinition new_function(session.get_current_line());
 				int body_index_of_function = -1;
 
 				// Поиск параметров функции
@@ -295,9 +301,7 @@ bool do_line_script_commands(Session& session, unsigned int line, const unsigned
 				while (body_index_of_function < session.lines.size() && (session.lines[body_index_of_function].namespace_level > session.lines[line].namespace_level
 					|| session.lines[body_index_of_function].namespace_level == 0)) {
 
-					if (session.lines[body_index_of_function].instructions.size() > 0) {
-						new_function.body.push_back(session.lines[body_index_of_function]);
-					}
+					new_function.body.push_back(session.lines[body_index_of_function]);
 					body_index_of_function++;
 				}
 

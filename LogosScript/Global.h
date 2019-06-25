@@ -12,8 +12,8 @@
 #include <ctime>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-//#include "mysql/mysql.h"
-#include <vector>
+#include <direct.h>
+#include "mysql/mysql.h"
 #include <fstream>
 #include <algorithm>
 #include "Page.h"
