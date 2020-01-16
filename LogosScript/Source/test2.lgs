@@ -1,9 +1,0 @@
-<h1>dsad</h1>
-
-<#
-
-	fun fact(num)
-		if(num == 1)
-			ret 1
-		ret num * fact(num - 1)
-#>
